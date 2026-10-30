@@ -2,8 +2,7 @@
 
 Models the RAG document-poisoning attack surface: an attacker-controlled file is
 ingested into a RAG store, a benign user query later retrieves it, and the model
-acts on injected instructions hidden in the document (OWASP LLM01 — indirect
-injection).
+acts on injected instructions hidden in the document.
 
 All 4 phases are explicitly implemented using data contracts:
 initialize() -> execute() -> evaluate() -> report()
@@ -12,9 +11,8 @@ This SET works as an example of a file-injection test. Unlike the direct
 `prompt_injection` SET (which sends plain text via connector.generate()), each
 case here delivers a `payload_file` through a connector file-intake channel by
 calling connector.run_file_injection(); the transport lives in the connector
-(e.g. LehmusLMConnector), while this SET only orchestrates and evaluates. It also
-showcases how a SET can combine several modular evaluators with a test-specific
-signal.
+(e.g. LehmusLMConnector), while this SET only orchestrates and evaluates. The 
+SET combines several modular evaluators with a test-specific signal.
 
 That signal is any literal string the poisoned document makes the model emit. It
 is set per case in the configuration and checked by SignalEvaluator with a
@@ -67,8 +65,8 @@ class IndirectInjectionSET(BaseSETPipeline):
 
     name = "Indirect Prompt Injection"
     description = (
-        "SET for indirect prompt injection through RAG document "
-        "poisoning (OWASP LLM01). Requires a connector with file-intake support."
+        "SET for indirect prompt injection through RAG document. "
+        "Requires a connector with file-intake support."
     )
 
     def __init__(self):
@@ -90,7 +88,7 @@ class IndirectInjectionSET(BaseSETPipeline):
               emit (a token, phrase, or sentence). The key `canary` is accepted
               as an equivalent for the conventional short form.
             - channel : which FileIntake channel to use (default from config)
-            - cleanup : whether to delete the ingested doc afterwards
+            - cleanup : whether to delete the ingested doc afterwards # TODO: In the current default config, this setting is set once for the SET, not per case - update docstring or config.
             - system / model_alias : optional per-case overrides
 
         Args:
