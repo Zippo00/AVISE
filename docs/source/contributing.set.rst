@@ -27,6 +27,19 @@ In order to test if a SET is functional, you can try to run it on some target mo
 CLI. Remember to import your SET in the ``avise/sets/<AI_MODEL_TYPE>/<SET_TYPE>/__init__.py`` file.
 This adds the SET into the ``registry``, allowing the Execution Engine to find and run it.
 
+``avise --SET-list`` groups SETs by the packages they are in, e.g. a SET in
+``avise/sets/languagemodel/single_turn/`` is listed under *Language Model* > *Single-turn*.
+If you add a new category directory, set its display name in that directory's ``__init__.py``:
+
+.. code-block:: python
+
+   # Category name shown by `avise --SET-list`
+   DISPLAY_NAME = "Computer Vision"
+
+Without ``DISPLAY_NAME``, the directory name is used with underscores shown as spaces. To list a SET
+under a different category than its directory, give the SET class a ``registry_category`` attribute
+with the category path, e.g. ``registry_category = ["Language Model", "Multi-turn"]``.
+
 When the SET is ready to be tested, you can run it with the CLI by e.g.:
 
 .. code:: bash

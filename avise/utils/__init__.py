@@ -6,3 +6,9 @@ from .report_format import ReportFormat
 from .build_output_path import build_output_path
 from .ansi_color_codes import ansi_colors
 from .load_data_file import load_data_file
+from .registry_listing import (
+    TerminalStyle,
+    detect_terminal_style,
+    render_registry_tree,
+    list_categories,
+)

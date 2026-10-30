@@ -12,7 +12,7 @@ from avise.reportgen.reporters.html_renderers.languagemodel import (
 from avise.sets.languagemodel.single_turn.jailbreak import JailbreakSET
 from avise.sets.languagemodel.single_turn.direct_prompt_injection import (
     DEFAULT_ELM_VERDICT_LABELS,
-    PromptInjectionSET,
+    DirectPromptInjectionSET,
     parse_elm_verdict,
 )
 

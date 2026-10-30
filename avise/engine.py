@@ -22,7 +22,14 @@ from . import sets
 
 
 from .registry import connector_registry, set_registry
-from .utils import ReportFormat, build_output_path
+from .utils import (
+    ReportFormat,
+    ansi_colors,
+    build_output_path,
+    detect_terminal_style,
+    list_categories,
+    render_registry_tree,
+)
 
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -225,28 +232,74 @@ class ExecutionEngine:
 
     @staticmethod
     def list_available(
-        sets: bool = True, connectors: bool = True, reportformats: bool = True
-    ):
+        sets: bool = True,
+        connectors: bool = True,
+        reportformats: bool = True,
+        category: Optional[str] = None,
+    ) -> bool:
         """Print available Security Evaluation Tests, Report Formats, and Connectors.
 
+        SETs and connectors are grouped by the kind of target system they are for.
+
         Args:
-            sets: Boolean flag indicating is available SETs will be printed. Default True.
-            connectors: Boolean flag indicating is available Connectors will be printed. Default True.
-            reportformats: Boolean flag indicating is available Report Formats will be printed. Default True.
+            sets: Whether to print the available SETs.
+            connectors: Whether to print the available connectors.
+            reportformats: Whether to print the available report formats.
+            category: If given, only show SETs and connectors in this category
+                (e.g. "languagemodel" or "single_turn").
+
+        Returns:
+            False if ``category`` matched no SET or connector category, else True.
         """
+        style = detect_terminal_style()
+        listings = []
         if sets:
-            print("\nAvailable SETs:\n")
-            for set_name in set_registry.list():
-                set_type = set_registry.get(set_name)
-                print(f"   \033[1m{set_name}:\033[0m {set_type.description}\n")
+            listings.append(
+                (set_registry, "avise.sets", "Available Security Evaluation Tests", "--SET-list")
+            )
+        if connectors:
+            listings.append(
+                (connector_registry, "avise.connectors", "Available Connectors", "--connector-list")
+            )
+
+        found = True
+        for registry, root_package, title, flag in listings:
+            root = registry.grouped(root_package)
+            if category:
+                filtered = root.filter(category)
+                if filtered is None:
+                    message = (
+                        f"Error: no category matches '{category}'. "
+                        f"Available categories: {', '.join(list_categories(root))}"
+                    )
+                    if style.color:
+                        message = f"{ansi_colors['red']}{message}{ansi_colors['reset']}"
+                    print("\n" + message)
+                    found = False
+                    continue
+                root = filtered
+                hint = f"Showing category '{category}'. Run `avise {flag}` to see all."
+            else:
+                example = next(root.iter_groups(), None)
+                hint = (
+                    f"Show a single category with `avise {flag} <category>`, "
+                    f"e.g. `avise {flag} {example.key}`."
+                    if example
+                    else ""
+                )
+            descriptions = {
+                name: getattr(registry.get(name), "description", "")
+                for name in registry.list()
+            }
+            print()
+            print(render_registry_tree(root, title, descriptions, style, hint), end="")
+
         if reportformats:
-            print("\nAvailable Report Formats:")
+            title = "Available Report Formats"
+            print("\n" + (f"{ansi_colors['bold']}{title}{ansi_colors['reset']}" if style.color else title))
             for format in ReportFormat:
                 print(f"   {format.value}")
-        if connectors:
-            print("\n Available Connectors:")
-            for connector_name in connector_registry.list():
-                print(f"   \033[1m{connector_name}\033[0m")
+        return found
 
     @staticmethod
     def get_set_registry():

@@ -73,13 +73,21 @@ def main(arguments=None) -> None:
     )
     parser.add_argument(
         "--SET-list",
-        action="store_true",
-        help="List available Security Evaluation Tests",
+        nargs="?",
+        const="",
+        default=None,
+        metavar="CATEGORY",
+        help="List available Security Evaluation Tests, grouped by target system type. "
+        "Give a CATEGORY (e.g. languagemodel, single_turn) to only list that category.",
     )
     parser.add_argument(
         "--connector-list",
-        action="store_true",
-        help="List available connectors and formats",
+        nargs="?",
+        const="",
+        default=None,
+        metavar="CATEGORY",
+        help="List available connectors, grouped by target system type, and report formats. "
+        "Give a CATEGORY (e.g. languagemodel) to only list connectors in that category.",
     )
 
     parser.add_argument(
@@ -161,12 +169,14 @@ def main(arguments=None) -> None:
 
     engine = ExecutionEngine()
 
-    if args.SET_list:
-        engine.list_available(reportformats=False, connectors=False)
+    if args.SET_list is not None:
+        engine.list_available(
+            reportformats=False, connectors=False, category=args.SET_list or None
+        )
         return
 
-    if args.connector_list:
-        engine.list_available(sets=False)
+    if args.connector_list is not None:
+        engine.list_available(sets=False, category=args.connector_list or None)
         return
 
     if not args.SET:

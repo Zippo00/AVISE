@@ -95,6 +95,12 @@ To list the available SETs, run the command:
 
     avise --SET-list
 
+The SETs are grouped by the type of target system they are intended for. To list only one category, give its name:
+
+.. code-block:: bash
+
+    avise --SET-list languagemodel
+
 
 Advanced usage
 --------------
@@ -193,10 +199,10 @@ Optional Arguments
      - Custom output file path
    * - ``--reports-dir``
      - Base directory for reports (default: ``avise-reports/``)
-   * - ``--SET-list``
-     - List available Security Evaluation Tests
-   * - ``--connector-list``
-     - List available Connectors
+   * - ``--SET-list [CATEGORY]``
+     - List available Security Evaluation Tests, grouped by target system type. Give a category (e.g. ``languagemodel``) to list only that category.
+   * - ``--connector-list [CATEGORY]``
+     - List available Connectors, grouped by target system type, and report formats. Give a category to list only that category.
    * - ``--verbose``, ``-v``
      - Enable verbose logging
    * - ``--version``, ``-V``

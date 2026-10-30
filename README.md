@@ -97,10 +97,11 @@ For example, you can run the `direct_prompt_injection` SET on the model pulled t
 avise --SET direct_prompt_injection --connectorconf ollama_lm --target <model_name>
 ```
 
-To list the available SETs, run the command:
+To list the available SETs, grouped by the type of target system they are intended for, run the command:
 ```bash
 avise --SET-list
 ```
+To list only one category, give its name, e.g. `avise --SET-list languagemodel` or `avise --SET-list single_turn`.
 
 
 ## Advanced Usage
@@ -180,8 +181,8 @@ avise --SET direct_prompt_injection --SETconf AVISE/avise/configs/SET/languagemo
 | `--output`, `-o` | Custom output file path |
 | `--api_key`, `-a` | API Key to use with requests sent to target API (overrides api_key from Connector configuration file). |
 | `--reports-dir`, `-d` | Base directory for reports (default: `avise-reports/`) |
-| `--SET-list` | List available Security Evaluation Tests |
-| `--connector-list` | List available Connectors |
+| `--SET-list [CATEGORY]` | List available Security Evaluation Tests, grouped by target system type. Give a category (e.g. `languagemodel`) to list only that category. |
+| `--connector-list [CATEGORY]` | List available Connectors, grouped by target system type, and report formats. Give a category to list only that category. |
 | `--verbose`, `-v` | Enable verbose logging |
 | `--version`, `-V` | Print version  |
 
