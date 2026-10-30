@@ -66,7 +66,7 @@ class IndirectInjectionSET(BaseSETPipeline):
     name = "Indirect Prompt Injection"
     description = (
         "Tests whether the target model follows instructions hidden in a poisoned "
-        "document retrieved through RAG (OWASP LLM01). Requires a connector with "
+        "document retrieved through RAG. Requires a connector with "
         "file-intake support."
     )
 
