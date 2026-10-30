@@ -1,0 +1,61 @@
+# Connector config for the Lehmus platform (University of Oulu / ConfidentialMind).
+#
+# Two services are involved and they have SEPARATE keys:
+#   1. the chat Model Gateway  -> api_url + api_key  (model "invoke" grant)
+#   2. the RAG service         -> rag_base_url + rag_read/write keys (separate service)
+#
+# Any value left null here can instead be supplied via an environment variable
+# (prefix "lehmus_"), which is the recommended place for the temporary keys so
+# they never end up committed. Env wins only when the field is null here.
+target_model:
+  connector: "lehmus-lm"          # registry id of LehmusLMConnector
+  type: "language_model"
+  name: null                      # Lehmus model alias (request "model"); env lehmus_MODEL
+  api_url: "https://api.lehmus-ai.oulu.fi"  # chat gateway base (paths added by the connector)
+  api_key: null                   # chat gateway key, "invoke" grant; env lehmus_APIKEY
+  max_tokens: 512                 # cap on generated tokens for direct chat
+  temperature: 0.0                # deterministic output for reproducible scoring
+
+  # --- RAG service (indirect-injection SET) --------------------------------
+  # RAG is a DIFFERENT service from the chat gateway: its own base URL that
+  # includes the store hash, and its own read/write keys from the portal.
+  rag_base_url: null              # full RAG base incl. /v1/api/<hash>; env lehmus_RAG_URL
+  rag_read_api_key: null          # "read" grant: retrieval + RAG chat; env lehmus_RAG_READ_APIKEY
+  rag_write_api_key: null         # "write" grant: /files ingest + delete; env lehmus_RAG_WRITE_APIKEY
+  rag_max_chunks: 4               # how many retrieved chunks to feed the model
+  rag_index_wait: 3.0             # seconds to wait after ingest before querying (indexing is async)
+
+# -----------------------------------------------------------------------------
+# Example: supply the keys via environment variables (prefix "lehmus_") instead
+# of editing the fields above, then run a SET against a model alias.
+#
+#   export lehmus_APIKEY="cm_api_<YOUR_API_KEY>"
+#   # only needed for the indirect-prompt-injection (RAG) SET:
+#   export lehmus_RAG_URL="https://api.lehmus-ai.oulu.fi/v1/api/<rag-hash>"
+#   export lehmus_RAG_READ_APIKEY="cm_api_<YOUR_READ_KEY>"
+#   export lehmus_RAG_WRITE_APIKEY="cm_api_<YOUR_WRITE_KEY>"
+#
+#   # direct prompt injection (plain chat):
+#   python3 -m avise --SET direct_prompt_injection -c lehmus_lm \
+#     --target "<model-alias>" --elm False --ai-summary False -f html
+#
+#   # indirect prompt injection (RAG document poisoning):
+#   python3 -m avise --SET indirect_prompt_injection -c lehmus_lm \
+#     --target "<model-alias>" --elm False --ai-summary False -f html
+#
+# The runs above use --elm False (fast; heuristic signal + evaluators only).
+# To let an Evaluation Language Model be the authoritative judge instead, pass
+# --elm True (the SET config must also provide evaluation_system_prompt, as
+# indirect_prompt_injection.json does). The ELM downloads on first use,
+# so the first run with the ELM enabled is slower:
+#
+#   # direct prompt injection, ELM as judge:
+#   python3 -m avise --SET direct_prompt_injection -c lehmus_lm \
+#     --target "<model-alias>" --elm True --ai-summary True -f html
+#
+#   # indirect injection, ELM as judge:
+#   python3 -m avise --SET indirect_prompt_injection -c lehmus_lm \
+#     --target "<model-alias>" --elm True --ai-summary True -f html
+#
+# --target sets the Lehmus model alias (overrides `name` / lehmus_MODEL).
+# -----------------------------------------------------------------------------

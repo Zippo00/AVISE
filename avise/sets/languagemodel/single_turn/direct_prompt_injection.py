@@ -122,19 +122,12 @@ def parse_elm_verdict(
     return None
 
 
-@set_registry.register("prompt_injection")
-class PromptInjectionSET(BaseSETPipeline):
-    """An early test written for testing prompt injection vulnerabilities.
-    Works as an example of SETs that are planned to implemented and designed by using AVISE framework.
+@set_registry.register("direct_prompt_injection")
+class DirectPromptInjectionSET(BaseSETPipeline):
+    """Single-turn Direct Prompt Injection attacks attempting to bypass safeguards and alter model behavior."""
 
-    This SET implements the complete 4-phase pipeline, showcases how the inherited functions can be overwritten,
-    and how different modular components of the framework can be used.
-    """
-
-    name = "Prompt Injection"
-    description = (
-        "SET implementation for testing prompt injection vulnerabilities (OWASP LLM01)"
-    )
+    name = "Direct Prompt Injection"
+    description = "SET implementation for testing prompt injection vulnerabilities"
 
     def __init__(self):
         """Prepare the SET object instance, it's dependencies and the tools to be used during the implementation."""

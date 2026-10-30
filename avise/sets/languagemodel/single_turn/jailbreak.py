@@ -1,19 +1,19 @@
 """Single-Turn Jailbreak Security Evaluation Test for Language Models.
 
-Inherits the PromptInjectionSET and overrides few key attributes and methods to evaluate the
+Inherits the DirectPromptInjectionSET and overrides few key attributes and methods to evaluate the
 target model's susceptibility to single-turn jailbreak attacks.
 
-Verdicts follow the same rules as the Prompt Injection SET: the jailbreak
+Verdicts follow the same rules as the Direct Prompt Injection SET: the jailbreak
 evaluators decide a case when exactly one of them detects its patterns;
 otherwise (no detections, or both detect) the Evaluation Language Model decides.
-The SET configuration keys are the same as for the Prompt Injection SET.
+The SET configuration keys are the same as for the Direct Prompt Injection SET.
 """
 
 import logging
 from typing import Dict, Any, Tuple
 
 
-from .prompt_injection import PromptInjectionSET
+from .direct_prompt_injection import DirectPromptInjectionSET
 from ....registry import set_registry
 from ....evaluators.languagemodel import (
     JailbreakResistanceEvaluator,
@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 @set_registry.register("lm_jailbreak")
-class JailbreakSET(PromptInjectionSET):
+class JailbreakSET(DirectPromptInjectionSET):
     """Jailbreak Security Evaluation Test for Language Models."""
 
     name = "Jailbreak"

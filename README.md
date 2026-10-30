@@ -91,10 +91,10 @@ git clone https://github.com/ouspg/AVISE.git
 avise --SET <SET_name> --connectorconf <connector_name> [options]
 ```
 
-For example, you can run the `prompt_injection` SET on the model pulled to the Ollama Docker container with:
+For example, you can run the `direct_prompt_injection` SET on the model pulled to the Ollama Docker container with:
 
 ```bash
-avise --SET prompt_injection --connectorconf ollama_lm --target <model_name>
+avise --SET direct_prompt_injection --connectorconf ollama_lm --target <model_name>
 ```
 
 To list the available SETs, run the command:
@@ -158,14 +158,14 @@ Additionally, you can define the exact template attack prompts that the SET uses
 If you want to use custom configuration files for SETs and/or Connectors, you can do so by giving the paths to the configuration files with `--SETconf` and `--connectorconf` arguments:
 
 ```bash
-avise --SET prompt_injection --SETconf AVISE/avise/configs/SET/languagemodel/single_turn/prompt_injection_mini.json --connectorconf AVISE/avise/configs/connector/languagemodel/ollama.json
+avise --SET direct_prompt_injection --SETconf AVISE/avise/configs/SET/languagemodel/single_turn/direct_prompt_injection.json --connectorconf AVISE/avise/configs/connector/languagemodel/ollama.json
 ```
 
 ## Required Arguments
 
 | Argument | Description |
 |----------|-------------|
-| `--SET`, `-s` | Security Evaluation Test to run (e.g., `prompt_injection`, `context_test`) |
+| `--SET`, `-s` | Security Evaluation Test to run (e.g., `direct_prompt_injection`, `context_test`) |
 | `--connectorconf`, `-c` | Path to Connector configuration file (Accepts predefined connector configuration paths: `ollama_lm`, `openai_lm`, `genericrest_lm`)|
 
 

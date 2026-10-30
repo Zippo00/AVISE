@@ -13,7 +13,7 @@ Usage:
     python -m avise --SET <SET_name> --connectorconf </path/to/connectorconfig/> --SETconf </path/to/setconfig/> --format json/html/md --output <path/to/outputdir>
 
 Example:
-    python -m avise --SET prompt_injection --connectorconf configs/connector/languagemodel/ollama.json --SETconf configs/SET/prompt_injection_mini.json
+    python -m avise --SET direct_prompt_injection --connectorconf configs/connector/languagemodel/ollama.json --SETconf configs/SET/languagemodel/single_turn/direct_prompt_injection.json
 
 """
 
@@ -42,7 +42,8 @@ DEFAULT_REPORTS_DIR = "avise-reports"
 DEFAULT_SET_CONFIGS = {
     "deceptive_delight": "configs/SET/languagemodel/multi_turn/deceptive_delight.json",
     "red_queen": "configs/SET/languagemodel/multi_turn/red_queen.json",
-    "prompt_injection": "configs/SET/languagemodel/single_turn/prompt_injection.json",
+    "direct_prompt_injection": "configs/SET/languagemodel/single_turn/direct_prompt_injection.json",
+    "indirect_prompt_injection": "configs/SET/languagemodel/single_turn/indirect_prompt_injection_rag.json",
     "lm_jailbreak": "configs/SET/languagemodel/single_turn/jailbreak.json",
     "context_test": "configs/SET/languagemodel/multi_turn/context_test.json",
     "cl_backdoor": "configs/SET/continuallearning/backdoor.yaml",
@@ -52,6 +53,7 @@ DEFAULT_CONNECTOR_CONFIGS = {
     "openai_lm": "configs/connector/languagemodel/openai.json",
     "genericrest_lm": "configs/connector/languagemodel/genericrest.json",
     "genericrest_cl": "configs/connector/continuallearning/genericrest.yaml",
+    "lehmus_lm": "configs/connector/languagemodel/lehmus.yaml",
 }
 
 
@@ -85,7 +87,7 @@ def main(arguments=None) -> None:
         "-s",
         nargs="+",
         type=str,
-        help="Security Evaluation Test(s) to run (e.g., prompt_injection)",
+        help="Security Evaluation Test(s) to run (e.g., direct_prompt_injection)",
     )
 
     parser.add_argument(
