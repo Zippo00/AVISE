@@ -9,6 +9,7 @@ from importlib.resources import files
 import torch
 from transformers import Mistral3ForConditionalGeneration, MistralCommonBackend
 from huggingface_hub import snapshot_download
+from mistral_common.exceptions import MistralCommonException
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -65,7 +66,7 @@ class EvaluationLanguageModel:
             self.model = Mistral3ForConditionalGeneration.from_pretrained(
                 self.model_path, device_map=use_device
             )
-        except (FileNotFoundError, IOError, ValueError):
+        except (FileNotFoundError, IOError, ValueError, MistralCommonException):
             logger.error(
                 "Evaluation model not found locally. Downloading it from Hugging Face..."
             )
