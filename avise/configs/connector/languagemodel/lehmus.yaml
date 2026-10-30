@@ -46,7 +46,7 @@ target_model:
 # The runs above use --elm False (fast; heuristic signal + evaluators only).
 # To let an Evaluation Language Model be the authoritative judge instead, pass
 # --elm True (the SET config must also provide evaluation_system_prompt, as
-# indirect_injection.json does). The ELM downloads on first use, 
+# indirect_injection.json does). The ELM downloads on first use,
 # so the first run with the ELM enabled is slower:
 #
 #   # direct injection, ELM as judge:

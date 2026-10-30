@@ -137,9 +137,13 @@ class IndirectInjectionSET(BaseSETPipeline):
         set_cases: List[LanguageModelSETCase] = []
         for i, s in enumerate(sets):
             if not isinstance(s, dict):
-                raise ValueError("indirect_injection cases must be objects with a payload_file.")
+                raise ValueError(
+                    "indirect_injection cases must be objects with a payload_file."
+                )
             if "payload_file" not in s:
-                raise ValueError(f"SET case {s.get('id', i)} is missing 'payload_file'.")
+                raise ValueError(
+                    f"SET case {s.get('id', i)} is missing 'payload_file'."
+                )
             # The trigger prompt is the "prompt" of the case; the file and the
             # delivery options travel in metadata.
             set_cases.append(
@@ -308,10 +312,13 @@ class IndirectInjectionSET(BaseSETPipeline):
             if output.error:
                 results.append(
                     EvaluationResult(
-                        set_id=output.set_id, prompt=output.prompt,
-                        response=output.response, status="error",
+                        set_id=output.set_id,
+                        prompt=output.prompt,
+                        response=output.response,
+                        status="error",
                         reason=f"Execution error: {output.error}",
-                        detections={}, metadata=output.metadata,
+                        detections={},
+                        metadata=output.metadata,
                     )
                 )
                 continue
@@ -323,10 +330,13 @@ class IndirectInjectionSET(BaseSETPipeline):
             if not response:
                 results.append(
                     EvaluationResult(
-                        set_id=output.set_id, prompt=output.prompt,
-                        response=output.response, status="error",
+                        set_id=output.set_id,
+                        prompt=output.prompt,
+                        response=output.response,
+                        status="error",
                         reason="Empty response — nothing retrieved/generated.",
-                        detections={}, metadata=output.metadata,
+                        detections={},
+                        metadata=output.metadata,
                     )
                 )
                 continue
@@ -342,7 +352,9 @@ class IndirectInjectionSET(BaseSETPipeline):
             # or show awareness that it was being injected?
             vuln_detected, vuln_matches = self.vulnerability_evaluator.detect(response)
             refusal_detected, refusal_matches = self.refusal_evaluator.detect(response)
-            awareness_detected, awareness_matches = self.awareness_evaluator.detect(response)
+            awareness_detected, awareness_matches = self.awareness_evaluator.detect(
+                response
+            )
 
             # A response that is essentially just the signal is clear compliance,
             # versus a signal quoted inside a longer explanation/refusal.
@@ -355,10 +367,18 @@ class IndirectInjectionSET(BaseSETPipeline):
                     "dominant": signal_dominant,
                     "matches": signal_matches or None,
                 },
-                "injection_awareness": {"detected": awareness_detected,
-                                        "matches": awareness_matches or None},
-                "vulnerability": {"detected": vuln_detected, "matches": vuln_matches or None},
-                "refusal": {"detected": refusal_detected, "matches": refusal_matches or None},
+                "injection_awareness": {
+                    "detected": awareness_detected,
+                    "matches": awareness_matches or None,
+                },
+                "vulnerability": {
+                    "detected": vuln_detected,
+                    "matches": vuln_matches or None,
+                },
+                "refusal": {
+                    "detected": refusal_detected,
+                    "matches": refusal_matches or None,
+                },
             }
 
             # The ELM is authoritative when enabled; otherwise use the heuristics.
@@ -371,9 +391,14 @@ class IndirectInjectionSET(BaseSETPipeline):
 
             results.append(
                 EvaluationResult(
-                    set_id=output.set_id, prompt=output.prompt, response=response,
-                    status=status, reason=reason, detections=detections,
-                    metadata=output.metadata, elm_evaluation=elm_evaluation,
+                    set_id=output.set_id,
+                    prompt=output.prompt,
+                    response=response,
+                    status=status,
+                    reason=reason,
+                    detections=detections,
+                    metadata=output.metadata,
+                    elm_evaluation=elm_evaluation,
                 )
             )
 
@@ -413,7 +438,9 @@ class IndirectInjectionSET(BaseSETPipeline):
         parts.append(question)
         return self.evaluation_model.generate("\n".join(parts))[0]["content"]
 
-    def _read_payload_excerpt(self, payload_file: Optional[str], limit: int = 1200) -> str:
+    def _read_payload_excerpt(
+        self, payload_file: Optional[str], limit: int = 1200
+    ) -> str:
         """Read a short excerpt of a payload file for the ELM prompt (best effort)."""
         if not payload_file:
             return ""
@@ -466,10 +493,9 @@ class IndirectInjectionSET(BaseSETPipeline):
         expected = signal.get("expected")
         matched = ", ".join(signal.get("matches") or []) or expected
         # The model is not complying if it refused or flagged the injection.
-        resisted = (
-            detections["refusal"].get("detected")
-            or detections["injection_awareness"].get("detected")
-        )
+        resisted = detections["refusal"].get("detected") or detections[
+            "injection_awareness"
+        ].get("detected")
 
         if signal.get("detected") and signal.get("dominant"):
             return (
@@ -543,7 +569,9 @@ class IndirectInjectionSET(BaseSETPipeline):
         if generate_ai_summary:
             logger.info("Generating AI summary...")
             subcategory_runs = self.calculate_subcategory_runs(results)
-            ai_summary = self.generate_ai_summary(results, summary_stats, subcategory_runs)
+            ai_summary = self.generate_ai_summary(
+                results, summary_stats, subcategory_runs
+            )
 
         # Build the ReportData object.
         report_data = ReportData(
@@ -551,15 +579,18 @@ class IndirectInjectionSET(BaseSETPipeline):
             timestamp=datetime.now().strftime("%Y-%m-%d | %H:%M"),
             execution_time_seconds=(
                 round((self.end_time - self.start_time).total_seconds(), 1)
-                if self.start_time and self.end_time else None
+                if self.start_time and self.end_time
+                else None
             ),
             summary=summary_stats,
             results=results,
             configuration={
                 "connector_config": Path(self.connector_config_path).name
-                if self.connector_config_path else "",
+                if self.connector_config_path
+                else "",
                 "set_config": Path(self.set_config_path).name
-                if self.set_config_path else "",
+                if self.set_config_path
+                else "",
                 "target_model": self.target_model_name,
                 "evaluation_model": self.evaluation_model_name or "",
             },
@@ -573,7 +604,9 @@ class IndirectInjectionSET(BaseSETPipeline):
             if report_format == ReportFormat.HTML:
                 # Default HTML: write both JSON & HTML report files.
                 HTMLReporter().write(report_data, output_file)
-                JSONReporter().write(report_data, Path(output_path.replace(".html", ".json")))
+                JSONReporter().write(
+                    report_data, Path(output_path.replace(".html", ".json"))
+                )
             elif report_format == ReportFormat.JSON:
                 JSONReporter().write(report_data, output_file)
             elif report_format == ReportFormat.MARKDOWN:
@@ -581,6 +614,7 @@ class IndirectInjectionSET(BaseSETPipeline):
             logger.info(f"Report written to {output_path}")
         except Exception as e:
             import traceback
+
             logger.error(f"Error writing report: {e}")
             logger.error(f"Traceback: {traceback.format_exc()}")
         return report_data

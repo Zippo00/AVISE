@@ -54,9 +54,10 @@ logger = logging.getLogger(__name__)
 
 class FileIntake(str, Enum):
     """File-bearing endpoints, each a distinct indirect-injection vector."""
-    RAG_CHAT = "rag_chat"              # primary: ingest -> {rag}/v1/chat/completions (server-side retrieve+generate, RAG's own model)
-    RAG_TOOL = "rag_tool"             # ingest -> gateway /v1/responses with RAG tool (needs combined-grant key)
-    RAG_INGEST = "rag_ingest"         # ingest -> /context -> gateway chat/completions (manual chunk feed, different model)
+
+    RAG_CHAT = "rag_chat"  # primary: ingest -> {rag}/v1/chat/completions (server-side retrieve+generate, RAG's own model)
+    RAG_TOOL = "rag_tool"  # ingest -> gateway /v1/responses with RAG tool (needs combined-grant key)
+    RAG_INGEST = "rag_ingest"  # ingest -> /context -> gateway chat/completions (manual chunk feed, different model)
     FILES_API = "files_api"
     INLINE_CONTENT = "inline_content"
 
@@ -67,7 +68,9 @@ class LehmusConfig:
     connector_id: str = "lehmus"
     base_url: Optional[str] = None
     api_key: Optional[str] = None
-    model_alias: str = ""                       # Lehmus alias (e.g. "xyz123abc") -> request "model"; env <id>_MODEL
+    model_alias: str = (
+        ""  # Lehmus alias (e.g. "xyz123abc") -> request "model"; env <id>_MODEL
+    )
     timeout: float = 120.0
     max_retries: int = 3
     temperature: float = 0.0
@@ -77,45 +80,74 @@ class LehmusConfig:
     # RAG is a separate service from the chat gateway, with its own base URL
     # (https://<host>/v1/api/<hash>) and its own keys. Read (/context) and
     # write (/files ingest + delete) use different portal keys.
-    rag_base_url: Optional[str] = None          # full RAG base incl. /v1/api/<hash>; env <id>_RAG_URL
-    rag_read_api_key: Optional[str] = None      # for /context + RAG chat (retrieval/query); env <id>_RAG_READ_APIKEY
-    rag_write_api_key: Optional[str] = None     # for /files ingest + delete; env <id>_RAG_WRITE_APIKEY
-    rag_max_chunks: int = 4                      # max_chunks for retrieval
-    rag_index_wait: float = 3.0                  # seconds to wait after ingest for indexing before querying
+    rag_base_url: Optional[str] = (
+        None  # full RAG base incl. /v1/api/<hash>; env <id>_RAG_URL
+    )
+    rag_read_api_key: Optional[str] = (
+        None  # for /context + RAG chat (retrieval/query); env <id>_RAG_READ_APIKEY
+    )
+    rag_write_api_key: Optional[str] = (
+        None  # for /files ingest + delete; env <id>_RAG_WRITE_APIKEY
+    )
+    rag_max_chunks: int = 4  # max_chunks for retrieval
+    rag_index_wait: float = (
+        3.0  # seconds to wait after ingest for indexing before querying
+    )
 
     # Responses-API + RAG-tool path (primary indirect-injection channel):
     # the gateway runs retrieval+generation server-side via an MCP tool.
-    rag_tool_name: Optional[str] = None         # exact tool name; if null, auto-discover via /mcp/
-    rag_tool_query_arg: str = "query"           # inputSchema property the tool expects the query in
+    rag_tool_name: Optional[str] = (
+        None  # exact tool name; if null, auto-discover via /mcp/
+    )
+    rag_tool_query_arg: str = (
+        "query"  # inputSchema property the tool expects the query in
+    )
 
     # endpoint paths
     chat_path: str = "/v1/chat/completions"
-    responses_path: str = "/v1/responses"       # Responses API (gateway)
-    mcp_path: str = "/mcp/"                      # MCP tools/list discovery (gateway host root)
+    responses_path: str = "/v1/responses"  # Responses API (gateway)
+    mcp_path: str = "/mcp/"  # MCP tools/list discovery (gateway host root)
     models_path: str = "/v1/models"
-    rag_files_path: str = "/files"              # RAG ingest + delete (on rag_base_url)
-    rag_context_path: str = "/context"          # RAG retrieval — chunks only (on rag_base_url)
-    rag_chat_path: str = "/v1/chat/completions"  # RAG retrieve+generate in one call (on rag_base_url)
-    files_path: str = "/v1/files"               # OpenAI-style Files API (disabled channel)
+    rag_files_path: str = "/files"  # RAG ingest + delete (on rag_base_url)
+    rag_context_path: str = "/context"  # RAG retrieval — chunks only (on rag_base_url)
+    rag_chat_path: str = (
+        "/v1/chat/completions"  # RAG retrieve+generate in one call (on rag_base_url)
+    )
+    files_path: str = "/v1/files"  # OpenAI-style Files API (disabled channel)
 
     # capability gates — RAG is always on; these two channels do not exist on
     # ConfidentialMind, so they stay off and raise a clear error if invoked.
-    enable_files_api: bool = False             # ConfidentialMind has no OpenAI-style /v1/files
-    enable_inline: bool = False                # inline file content parts unsupported here
+    enable_files_api: bool = False  # ConfidentialMind has no OpenAI-style /v1/files
+    enable_inline: bool = False  # inline file content parts unsupported here
 
-    files_purpose: str = "assistants"          # Files API ingest purpose value
+    files_purpose: str = "assistants"  # Files API ingest purpose value
 
     # fields recognised in the AVISE model sub-dict (name/api_url/api_key are
     # mapped separately below)
     _EXTRA_FIELDS = (
-        "connector_id", "timeout", "max_retries",
-        "temperature", "max_tokens", "chat_path", "models_path",
-        "rag_base_url", "rag_read_api_key", "rag_write_api_key",
-        "rag_max_chunks", "rag_index_wait", "rag_files_path", "rag_context_path",
+        "connector_id",
+        "timeout",
+        "max_retries",
+        "temperature",
+        "max_tokens",
+        "chat_path",
+        "models_path",
+        "rag_base_url",
+        "rag_read_api_key",
+        "rag_write_api_key",
+        "rag_max_chunks",
+        "rag_index_wait",
+        "rag_files_path",
+        "rag_context_path",
         "rag_chat_path",
-        "rag_tool_name", "rag_tool_query_arg", "responses_path", "mcp_path",
+        "rag_tool_name",
+        "rag_tool_query_arg",
+        "responses_path",
+        "mcp_path",
         "files_path",
-        "enable_files_api", "enable_inline", "files_purpose",
+        "enable_files_api",
+        "enable_inline",
+        "files_purpose",
     )
 
     @classmethod
@@ -146,7 +178,9 @@ class LehmusConfig:
         # created in the Lehmus portal; binds project + user
         key = self.api_key or os.environ.get(f"{self.connector_id}_APIKEY")
         if not key:
-            raise ValueError(f"No API key: set api_key or env {self.connector_id}_APIKEY")
+            raise ValueError(
+                f"No API key: set api_key or env {self.connector_id}_APIKEY"
+            )
         return key
 
     # RAG service (separate base URL + separate read/write keys) --------------
@@ -160,7 +194,9 @@ class LehmusConfig:
         return url.rstrip("/")
 
     def resolved_rag_read_key(self) -> str:
-        key = self.rag_read_api_key or os.environ.get(f"{self.connector_id}_RAG_READ_APIKEY")
+        key = self.rag_read_api_key or os.environ.get(
+            f"{self.connector_id}_RAG_READ_APIKEY"
+        )
         if not key:
             raise ValueError(
                 f"No RAG read key: set rag_read_api_key or env {self.connector_id}_RAG_READ_APIKEY"
@@ -168,7 +204,9 @@ class LehmusConfig:
         return key
 
     def resolved_rag_write_key(self) -> str:
-        key = self.rag_write_api_key or os.environ.get(f"{self.connector_id}_RAG_WRITE_APIKEY")
+        key = self.rag_write_api_key or os.environ.get(
+            f"{self.connector_id}_RAG_WRITE_APIKEY"
+        )
         if not key:
             raise ValueError(
                 f"No RAG write key: set rag_write_api_key or env {self.connector_id}_RAG_WRITE_APIKEY"
@@ -178,7 +216,9 @@ class LehmusConfig:
     def resolved_model_alias(self) -> str:
         alias = self.model_alias or os.environ.get(f"{self.connector_id}_MODEL")
         if not alias:
-            raise ValueError(f"No model alias: set name or env {self.connector_id}_MODEL")
+            raise ValueError(
+                f"No model alias: set name or env {self.connector_id}_MODEL"
+            )
         return alias
 
 
@@ -186,9 +226,9 @@ class LehmusConfig:
 @dataclass
 class InjectionResult:
     response_text: str
-    channel: Optional[FileIntake] = None   # which vector produced this
+    channel: Optional[FileIntake] = None  # which vector produced this
     raw: dict[str, Any] = field(default_factory=dict)
-    artifact_id: Optional[str] = None      # doc_id / file_id, for cleanup
+    artifact_id: Optional[str] = None  # doc_id / file_id, for cleanup
     error: Optional[str] = None
 
 
@@ -255,8 +295,9 @@ class LehmusLMConnector(BaseLMConnector):
             backoff *= 2
         return last  # type: ignore[return-value]
 
-    def _rag_request(self, method: str, path: str, api_key: str,
-                     **kw: Any) -> requests.Response:
+    def _rag_request(
+        self, method: str, path: str, api_key: str, **kw: Any
+    ) -> requests.Response:
         """HTTP to the separate RAG service (own base URL + own key).
 
         Uses a per-call Authorization header (RAG read/write keys differ from
@@ -267,7 +308,11 @@ class LehmusLMConnector(BaseLMConnector):
         backoff, last = 1.0, None
         for _ in range(self.cfg.max_retries):
             resp = requests.request(
-                method, url, headers=headers, timeout=self.cfg.timeout, **kw,
+                method,
+                url,
+                headers=headers,
+                timeout=self.cfg.timeout,
+                **kw,
             )
             if resp.status_code not in (429, 500, 502, 503, 504):
                 return resp
@@ -276,8 +321,9 @@ class LehmusLMConnector(BaseLMConnector):
             backoff *= 2
         return last  # type: ignore[return-value]
 
-    def _post_chat(self, messages: list[dict],
-                   model_alias: Optional[str] = None, **kw: Any) -> InjectionResult:
+    def _post_chat(
+        self, messages: list[dict], model_alias: Optional[str] = None, **kw: Any
+    ) -> InjectionResult:
         body: dict[str, Any] = {
             "model": model_alias or self.cfg.resolved_model_alias(),
             "messages": messages,
@@ -328,7 +374,9 @@ class LehmusLMConnector(BaseLMConnector):
         """
         system_prompt = data.get("system_prompt")
         if system_prompt is not None and not isinstance(system_prompt, str):
-            raise ValueError('If using "system_prompt" in data, it needs to be a string.')
+            raise ValueError(
+                'If using "system_prompt" in data, it needs to be a string.'
+            )
 
         model_alias = data.get("model_alias") or data.get("model")
         passthrough = {
@@ -353,7 +401,9 @@ class LehmusLMConnector(BaseLMConnector):
                 msgs.append({"role": message.role, "content": message.content})
         else:
             if "prompt" not in data:
-                raise KeyError('Single-turn generation requires a "prompt" key in data.')
+                raise KeyError(
+                    'Single-turn generation requires a "prompt" key in data.'
+                )
             if not isinstance(data["prompt"], str):
                 raise ValueError('Single-turn "prompt" must be a string.')
             msgs = (
@@ -366,7 +416,9 @@ class LehmusLMConnector(BaseLMConnector):
                 f"{ansi_colors['red']}ERROR while generating response from "
                 f"Lehmus: {result.error}{ansi_colors['reset']}"
             )
-            raise RuntimeError(f"Failed to generate response from Lehmus: {result.error}")
+            raise RuntimeError(
+                f"Failed to generate response from Lehmus: {result.error}"
+            )
         return {"response": result.response_text}
 
     # -- unified file dispatch ----------------------------------------------
@@ -380,8 +432,7 @@ class LehmusLMConnector(BaseLMConnector):
         model_alias: Optional[str] = None,
         **kw: Any,
     ) -> InjectionResult:
-        """
-        Deliver an attacker-controlled file through one intake channel and
+        """Deliver an attacker-controlled file through one intake channel and
         capture the model response. Detection stays in the analyze phase.
 
         trigger_prompt: the benign user turn fired after/with the file.
@@ -443,8 +494,9 @@ class LehmusLMConnector(BaseLMConnector):
         model_alias = kw.pop("model_alias", None)
         doc_id = self.ingest_file(path)
         self._wait_for_index()
-        messages = ([{"role": "system", "content": system}] if system else []) + \
-                   [{"role": "user", "content": trigger_prompt}]
+        messages = ([{"role": "system", "content": system}] if system else []) + [
+            {"role": "user", "content": trigger_prompt}
+        ]
         body: dict[str, Any] = {
             # the RAG endpoint uses its own bound model, so this field is largely
             # ignored; a valid value is still sent.
@@ -453,17 +505,22 @@ class LehmusLMConnector(BaseLMConnector):
             "max_chunks": self.cfg.rag_max_chunks,
             "temperature": kw.pop("temperature", self.cfg.temperature),
         }
-        resp = self._rag_request("POST", self.cfg.rag_chat_path,
-                                 self.cfg.resolved_rag_read_key(), json=body)
+        resp = self._rag_request(
+            "POST", self.cfg.rag_chat_path, self.cfg.resolved_rag_read_key(), json=body
+        )
         if resp.status_code != 200:
-            return InjectionResult("", artifact_id=doc_id,
-                                   error=f"rag chat {resp.status_code}: {resp.text[:300]}")
+            return InjectionResult(
+                "",
+                artifact_id=doc_id,
+                error=f"rag chat {resp.status_code}: {resp.text[:300]}",
+            )
         data = resp.json()
         try:
             text = data["choices"][0]["message"]["content"]
         except (KeyError, IndexError) as e:
-            return InjectionResult("", raw=data, artifact_id=doc_id,
-                                   error=f"unexpected schema: {e}")
+            return InjectionResult(
+                "", raw=data, artifact_id=doc_id, error=f"unexpected schema: {e}"
+            )
         return InjectionResult(text, raw=data, artifact_id=doc_id)
 
     # -- channel 1: RAG as a Responses-API tool (needs combined-grant key) ----
@@ -485,7 +542,8 @@ class LehmusLMConnector(BaseLMConnector):
             "type": "function",
             "name": tool["name"],
             "description": tool.get("description", "Search the documents."),
-            "parameters": tool.get("inputSchema") or {
+            "parameters": tool.get("inputSchema")
+            or {
                 "type": "object",
                 "properties": {self.cfg.rag_tool_query_arg: {"type": "string"}},
                 "required": [self.cfg.rag_tool_query_arg],
@@ -507,8 +565,11 @@ class LehmusLMConnector(BaseLMConnector):
 
         resp = self._request("POST", self.cfg.responses_path, json=body)
         if resp.status_code != 200:
-            return InjectionResult("", artifact_id=doc_id,
-                                   error=f"responses {resp.status_code}: {resp.text[:300]}")
+            return InjectionResult(
+                "",
+                artifact_id=doc_id,
+                error=f"responses {resp.status_code}: {resp.text[:300]}",
+            )
         data = resp.json()
         text = self._extract_responses_text(data)
         return InjectionResult(text, raw=data, artifact_id=doc_id)
@@ -527,10 +588,13 @@ class LehmusLMConnector(BaseLMConnector):
             "Accept": "application/json, text/event-stream",
         }
         payload = {"jsonrpc": "2.0", "id": 1, "method": method, "params": params or {}}
-        resp = requests.post(url, headers=headers, json=payload,
-                             timeout=self.cfg.timeout)
+        resp = requests.post(
+            url, headers=headers, json=payload, timeout=self.cfg.timeout
+        )
         if resp.status_code != 200:
-            raise RuntimeError(f"MCP {method} failed {resp.status_code}: {resp.text[:300]}")
+            raise RuntimeError(
+                f"MCP {method} failed {resp.status_code}: {resp.text[:300]}"
+            )
         data = self._parse_maybe_sse(resp)
         if isinstance(data, dict) and data.get("error"):
             raise RuntimeError(f"MCP {method} error: {data['error']}")
@@ -551,8 +615,11 @@ class LehmusLMConnector(BaseLMConnector):
         data = self._mcp_rpc("tools/call", {"name": name, "arguments": arguments or {}})
         result = data.get("result") or {}
         text = self._extract_mcp_content(result)
-        return InjectionResult(text, raw=data,
-                               error="tool reported isError" if result.get("isError") else None)
+        return InjectionResult(
+            text,
+            raw=data,
+            error="tool reported isError" if result.get("isError") else None,
+        )
 
     @staticmethod
     def _extract_mcp_content(result: Any) -> str:
@@ -566,6 +633,7 @@ class LehmusLMConnector(BaseLMConnector):
                     parts.append(item["text"])
                 elif "json" in item:
                     import json as _json
+
                     parts.append(_json.dumps(item["json"]))
         return "\n".join(parts)
 
@@ -615,13 +683,14 @@ class LehmusLMConnector(BaseLMConnector):
         for line in resp.text.splitlines():
             line = line.strip()
             if line.startswith("data:"):
-                chunk = line[len("data:"):].strip()
+                chunk = line[len("data:") :].strip()
                 if chunk and chunk != "[DONE]":
                     last = chunk
         if last is None:
             return {}
         try:
             import json as _json
+
             return _json.loads(last)
         except ValueError:
             return {}
@@ -643,7 +712,10 @@ class LehmusLMConnector(BaseLMConnector):
                 continue
             if item.get("type") == "message" or item.get("role") == "assistant":
                 for part in item.get("content", []) or []:
-                    if isinstance(part, dict) and part.get("type") in ("output_text", "text"):
+                    if isinstance(part, dict) and part.get("type") in (
+                        "output_text",
+                        "text",
+                    ):
                         t = part.get("text")
                         if t:
                             texts.append(t)
@@ -663,17 +735,21 @@ class LehmusLMConnector(BaseLMConnector):
         artifact_id = the ingested doc id, for cleanup.
         """
         if not trigger_prompt:
-            raise ValueError("RAG_INGEST needs a trigger_prompt for the retrieval query")
+            raise ValueError(
+                "RAG_INGEST needs a trigger_prompt for the retrieval query"
+            )
         doc_id = self.ingest_file(path)
         self._wait_for_index()
         chunks = self._retrieve_context(trigger_prompt)
         context_block = "\n\n".join(chunks)
         user_content = (
             f"Context:\n{context_block}\n\nQuestion: {trigger_prompt}"
-            if context_block else trigger_prompt
+            if context_block
+            else trigger_prompt
         )
-        msgs = ([{"role": "system", "content": system}] if system else []) + \
-               [{"role": "user", "content": user_content}]
+        msgs = ([{"role": "system", "content": system}] if system else []) + [
+            {"role": "user", "content": user_content}
+        ]
         res = self._post_chat(msgs, **kw)
         res.artifact_id = doc_id
         return res
@@ -689,13 +765,19 @@ class LehmusLMConnector(BaseLMConnector):
             form: dict[str, Any] = {}
             if metadata:
                 import json as _json
+
                 form["metadata"] = _json.dumps(metadata)
             resp = self._rag_request(
-                "POST", self.cfg.rag_files_path, self.cfg.resolved_rag_write_key(),
-                files=files, data=form,
+                "POST",
+                self.cfg.rag_files_path,
+                self.cfg.resolved_rag_write_key(),
+                files=files,
+                data=form,
             )
         if resp.status_code not in (200, 201):
-            raise RuntimeError(f"RAG ingest failed {resp.status_code}: {resp.text[:300]}")
+            raise RuntimeError(
+                f"RAG ingest failed {resp.status_code}: {resp.text[:300]}"
+            )
         data = resp.json()
         return data.get("id") or data.get("document_id") or data.get("file_id", "")
 
@@ -706,11 +788,15 @@ class LehmusLMConnector(BaseLMConnector):
         """
         body: dict[str, Any] = {"query": query, "max_chunks": self.cfg.rag_max_chunks}
         resp = self._rag_request(
-            "POST", self.cfg.rag_context_path, self.cfg.resolved_rag_read_key(),
+            "POST",
+            self.cfg.rag_context_path,
+            self.cfg.resolved_rag_read_key(),
             json=body,
         )
         if resp.status_code != 200:
-            raise RuntimeError(f"RAG context failed {resp.status_code}: {resp.text[:300]}")
+            raise RuntimeError(
+                f"RAG context failed {resp.status_code}: {resp.text[:300]}"
+            )
         data = resp.json()
         return self._extract_chunks(data)
 
@@ -722,8 +808,13 @@ class LehmusLMConnector(BaseLMConnector):
         a bare list, or a list of strings. Falls back to [] if nothing matches.
         """
         if isinstance(data, dict):
-            items = (data.get("chunks") or data.get("context")
-                     or data.get("results") or data.get("data") or [])
+            items = (
+                data.get("chunks")
+                or data.get("context")
+                or data.get("results")
+                or data.get("data")
+                or []
+            )
         elif isinstance(data, list):
             items = data
         else:
@@ -742,10 +833,13 @@ class LehmusLMConnector(BaseLMConnector):
     def _via_files_api(self, path, trigger_prompt, system, **kw) -> InjectionResult:
         file_id = self._upload_file(path)
         part = {"type": "file", "file": {"file_id": file_id}}
-        user = {"role": "user", "content": [
-            {"type": "text", "text": trigger_prompt or "Use the attached file."},
-            part,
-        ]}
+        user = {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": trigger_prompt or "Use the attached file."},
+                part,
+            ],
+        }
         msgs = ([{"role": "system", "content": system}] if system else []) + [user]
         res = self._post_chat(msgs, **kw)
         res.artifact_id = file_id
@@ -755,10 +849,16 @@ class LehmusLMConnector(BaseLMConnector):
         mime = mimetypes.guess_type(path)[0] or "application/octet-stream"
         with open(path, "rb") as fh:
             files = {"file": (os.path.basename(path), fh, mime)}
-            resp = self._request("POST", self.cfg.files_path,
-                                  files=files, data={"purpose": self.cfg.files_purpose})
+            resp = self._request(
+                "POST",
+                self.cfg.files_path,
+                files=files,
+                data={"purpose": self.cfg.files_purpose},
+            )
         if resp.status_code not in (200, 201):
-            raise RuntimeError(f"file upload failed {resp.status_code}: {resp.text[:300]}")
+            raise RuntimeError(
+                f"file upload failed {resp.status_code}: {resp.text[:300]}"
+            )
         return resp.json().get("id", "")
 
     # -- channel 3: inline content part (transient, no upload) --------------
@@ -769,14 +869,20 @@ class LehmusLMConnector(BaseLMConnector):
         b64 = base64.b64encode(raw).decode()
         # Server-side parsing of file content parts is model/server dependent
         # on vLLM. For text docs, decode to a text part instead.
-        part = {"type": "file", "file": {
-            "filename": os.path.basename(path),
-            "file_data": f"data:{mime};base64,{b64}",
-        }}
-        user = {"role": "user", "content": [
-            {"type": "text", "text": trigger_prompt or "Use the attached file."},
-            part,
-        ]}
+        part = {
+            "type": "file",
+            "file": {
+                "filename": os.path.basename(path),
+                "file_data": f"data:{mime};base64,{b64}",
+            },
+        }
+        user = {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": trigger_prompt or "Use the attached file."},
+                part,
+            ],
+        }
         msgs = ([{"role": "system", "content": system}] if system else []) + [user]
         return self._post_chat(msgs, **kw)
 
@@ -785,7 +891,8 @@ class LehmusLMConnector(BaseLMConnector):
         if channel in (FileIntake.RAG_CHAT, FileIntake.RAG_TOOL, FileIntake.RAG_INGEST):
             # DELETE {rag_base}/files/{id} on the RAG service (write key)
             resp = self._rag_request(
-                "DELETE", f"{self.cfg.rag_files_path}/{artifact_id}",
+                "DELETE",
+                f"{self.cfg.rag_files_path}/{artifact_id}",
                 self.cfg.resolved_rag_write_key(),
             )
             return resp.status_code in (200, 202, 204)
@@ -797,15 +904,14 @@ class LehmusLMConnector(BaseLMConnector):
 
     # -- SET orchestration --------------------------------------------------
     def run_file_injection(self, set_config: dict[str, Any]) -> InjectionResult:
-        """
-        Execute one file-injection SET. Expected shape:
-            {
-              "type": "file_injection",
-              "channel": "rag_ingest",          # any FileIntake value
-              "payload_file": "payloads/x.txt",
-              "trigger_prompt": "Summarize the uploaded document.",
-              "cleanup": true
-            }
+        """Execute one file-injection SET. Expected shape:
+        {
+          "type": "file_injection",
+          "channel": "rag_ingest",          # any FileIntake value
+          "payload_file": "payloads/x.txt",
+          "trigger_prompt": "Summarize the uploaded document.",
+          "cleanup": true
+        }
         """
         try:
             return self.send_file(
@@ -834,9 +940,7 @@ class LehmusLMConnector(BaseLMConnector):
         try:
             resp = self._request("GET", self.cfg.models_path)
         except Exception as e:
-            raise ConnectionError(
-                f"Cannot connect to Lehmus API at {self._base}: {e}"
-            )
+            raise ConnectionError(f"Cannot connect to Lehmus API at {self._base}: {e}")
         if resp is None or resp.status_code != 200:
             code = getattr(resp, "status_code", "no response")
             raise ConnectionError(
