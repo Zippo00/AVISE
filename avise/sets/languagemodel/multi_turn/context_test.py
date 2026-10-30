@@ -30,7 +30,10 @@ class ContextTest(BaseSETPipeline):
     """Context Test SET."""
 
     name = "Context test"
-    description = "A simple test for multi-turn conversations where the conversation history is passed to the target"
+    description = (
+        "Tests whether the target model keeps track of the conversation context "
+        "across multiple turns, with the full history sent in every request."
+    )
 
     def __init__(self):
         super().__init__()

@@ -3,6 +3,7 @@
 import os
 import shutil
 import sys
+import textwrap
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Dict, List, Optional, TextIO
 
@@ -11,11 +12,13 @@ from .ansi_color_codes import ansi_colors
 if TYPE_CHECKING:
     from ..registry.registry import RegistryGroup
 
-UNICODE_GLYPHS = {"branch": "├── ", "last": "└── ", "pipe": "│   ", "space": "    ", "ellipsis": "…"}
-ASCII_GLYPHS = {"branch": "|-- ", "last": "`-- ", "pipe": "|   ", "space": "    ", "ellipsis": "..."}
+UNICODE_GLYPHS = {"branch": "├── ", "last": "└── ", "pipe": "│   ", "space": "    "}
+ASCII_GLYPHS = {"branch": "|-- ", "last": "`-- ", "pipe": "|   ", "space": "    "}
 
-# Descriptions are dropped instead of truncated below this many columns.
-MIN_DESCRIPTION_WIDTH = 15
+# Below this many columns beside the names, descriptions go on the lines under each name.
+MIN_SIDE_BY_SIDE_WIDTH = 30
+# Stacked descriptions are wrapped to at least this width, even if lines overflow.
+MIN_STACKED_WIDTH = 20
 
 
 @dataclass
@@ -99,6 +102,9 @@ def render_registry_tree(
 
     Top-level groups are printed as headings; their subgroups and names are
     drawn as a tree below them. Groups and names are sorted alphabetically.
+    With a width limit, descriptions wrap in a column beside the names, or on
+    the lines under each name if that column would be too narrow; entries are
+    then separated by a tree line.
 
     Args:
         root: Root group from ``Registry.grouped()``.
@@ -114,8 +120,9 @@ def render_registry_tree(
     glyphs = UNICODE_GLYPHS if style.unicode else ASCII_GLYPHS
     descriptions = {k: _clean_description(v) for k, v in (descriptions or {}).items()}
 
-    # Rows are (kind, prefix, text, count) with kind "title", "heading", "group",
-    # "item" or "blank"; widths are measured before colour codes are added.
+    # Rows are (kind, prefix, text, count, continuation) with kind "title",
+    # "heading", "group", "item" or "blank". The continuation is the prefix for
+    # further lines of an item. Widths are measured before colour codes are added.
     rows: List[tuple] = []
 
     def add_children(group: "RegistryGroup", prefix: str) -> None:
@@ -130,28 +137,71 @@ def render_registry_tree(
         for i, (kind, child) in enumerate(children):
             last = i == len(children) - 1
             branch = prefix + (glyphs["last"] if last else glyphs["branch"])
+            continuation = prefix + (glyphs["space"] if last else glyphs["pipe"])
             if kind == "item":
-                rows.append(("item", branch, child, None))
+                rows.append(("item", branch, child, None, continuation))
             else:
-                rows.append(("group", branch, child.display_name, child.count()))
-                add_children(child, prefix + (glyphs["space"] if last else glyphs["pipe"]))
+                rows.append(("group", branch, child.display_name, child.count(), ""))
+                add_children(child, continuation)
 
-    rows.append(("title", "", title, root.count()))
+    rows.append(("title", "", title, root.count(), ""))
     if root.items:
-        rows.append(("blank", "", "", None))
+        rows.append(("blank", "", "", None, ""))
         add_children(_items_only(root), "")
     for group in root.sorted_groups():
-        rows.append(("blank", "", "", None))
-        rows.append(("heading", "", group.display_name, group.count()))
+        rows.append(("blank", "", "", None, ""))
+        rows.append(("heading", "", group.display_name, group.count(), ""))
         add_children(group, "")
 
-    item_widths = [len(prefix) + len(text) for kind, prefix, text, _ in rows if kind == "item"]
+    item_widths = [len(row[1]) + len(row[2]) for row in rows if row[0] == "item"]
     description_column = max(item_widths, default=0) + 2
+    stacked = (
+        style.width is not None
+        and style.width - description_column < MIN_SIDE_BY_SIDE_WIDTH
+    )
+
+    def description_lines(name: str, prefix: str, continuation: str) -> List[str]:
+        """Lay out an item's description as plain-text line suffixes.
+
+        Args:
+            name: Registered name of the item.
+            prefix: Tree glyphs before the item's name.
+            continuation: Tree glyphs for the item's further lines.
+
+        Returns:
+            Text to append after the name on the item's first line, followed by
+            the text of each further line (without the continuation prefix).
+        """
+        description = descriptions.get(name, "")
+        if not description:
+            return [""]
+        if style.width is None:
+            return [" " * (description_column - len(prefix) - len(name)) + description]
+        if stacked:
+            width = max(style.width - len(continuation), MIN_STACKED_WIDTH)
+            return [""] + textwrap.wrap(description, width, break_on_hyphens=False)
+        wrapped = textwrap.wrap(
+            description, style.width - description_column, break_on_hyphens=False
+        )
+        indent = " " * (description_column - len(continuation))
+        first = " " * (description_column - len(prefix) - len(name)) + wrapped[0]
+        return [first] + [indent + line for line in wrapped[1:]]
+
+    layouts = {
+        row[2]: description_lines(row[2], row[1], row[4]) for row in rows if row[0] == "item"
+    }
+    spaced = any(len(layout) > 1 for layout in layouts.values())
 
     lines = []
-    for kind, prefix, text, count in rows:
+    previous_kind = None
+    for kind, prefix, text, count, continuation in rows:
         counter = _paint(f" ({count})", ansi_colors["dim"], style) if count is not None else ""
         tree = _paint(prefix, ansi_colors["dim"], style)
+        if spaced and previous_kind == "item" and kind in ("item", "group"):
+            # Separate multi-line entries with the tree's vertical line
+            spacer = prefix[: -len(glyphs["branch"])] + glyphs["pipe"]
+            lines.append(_paint(spacer.rstrip(), ansi_colors["dim"], style))
+        previous_kind = kind
         if kind == "blank":
             lines.append("")
         elif kind == "title":
@@ -161,18 +211,10 @@ def render_registry_tree(
         elif kind == "group":
             lines.append(tree + _paint(text, ansi_colors["bold"], style) + counter)
         else:
-            line = tree + _paint(text, ansi_colors["bold"], style)
-            description = descriptions.get(text, "")
-            available = (
-                style.width - description_column if style.width is not None else None
-            )
-            if description and (available is None or available >= MIN_DESCRIPTION_WIDTH):
-                if available is not None and len(description) > available:
-                    cut = available - len(glyphs["ellipsis"])
-                    description = description[:cut].rstrip() + glyphs["ellipsis"]
-                padding = " " * (description_column - len(prefix) - len(text))
-                line += padding + description
-            lines.append(line)
+            first, *further = layouts[text]
+            lines.append(tree + _paint(text, ansi_colors["bold"], style) + first)
+            for line in further:
+                lines.append(_paint(continuation, ansi_colors["dim"], style) + line)
 
     if hint:
         lines += ["", _paint(hint, ansi_colors["dim"], style)]

@@ -65,8 +65,9 @@ class IndirectInjectionSET(BaseSETPipeline):
 
     name = "Indirect Prompt Injection"
     description = (
-        "SET for indirect prompt injection through RAG document. "
-        "Requires a connector with file-intake support."
+        "Tests whether the target model follows instructions hidden in a poisoned "
+        "document retrieved through RAG (OWASP LLM01). Requires a connector with "
+        "file-intake support."
     )
 
     def __init__(self):
