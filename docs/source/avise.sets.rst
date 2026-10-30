@@ -25,3 +25,11 @@ avise.sets.languagemodel.single\_turn.prompt\_injection module
    :show-inheritance:
    :undoc-members:
 
+
+avise.sets.languagemodel.single\_turn.jailbreak module
+------------------------------------------------------
+
+.. automodule:: avise.sets.languagemodel.single_turn.jailbreak
+   :members:
+   :show-inheritance:
+   :undoc-members:

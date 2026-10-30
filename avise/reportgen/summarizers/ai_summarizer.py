@@ -4,6 +4,8 @@ import logging
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 
+from .profiles import SummaryProfile, select_summary_profile
+
 logger = logging.getLogger(__name__)
 
 
@@ -53,21 +55,52 @@ class AISummarizer:
         results: List[Dict[str, Any]],
         summary_stats: Dict[str, Any],
         subcategory_runs: Optional[Dict[str, int]] = None,
+        configuration: Optional[Dict[str, Any]] = None,
+        set_name: str = "",
+        profile: Optional[SummaryProfile] = None,
     ) -> AISummary:
         """Generate an AI summary of the security evaluation test results.
 
+        The domain-specific input, prompts and notes come from a SummaryProfile
+        (see ``avise.reportgen.summarizers.profiles``), selected from the
+        results unless one is given.
+
         Args:
-            results: List of evaluation results from the security test
-            summary_stats: Summary statistics (total_set_cases, passed, failed, etc.)
-            subcategory_runs: Optional dict of subcategory -> number of runs
+            results: Evaluation results in dict form (as serialised to JSON).
+            summary_stats: Summary statistics (total_set_cases, passed, failed, etc.).
+            subcategory_runs: Optional mapping of subcategory -> number of runs.
+            configuration: Optional report configuration; CL profiles read the
+                attack settings and task sequences from it.
+            set_name: The SET's name, used to look up SET-specific prompt context.
+            profile: Profile to use instead of selecting one from the results.
 
         Returns:
-            AISummary: Structured summary with issue summary, remediations, and notes
+            AISummary: Structured summary with issue summary, remediations, and notes.
         """
-        issue_summary = self._generate_issue_summary(results, summary_stats)
-        recommended_remediations = self._generate_remediations(results, summary_stats)
-        notes = self._generate_notes(
-            subcategory_runs=subcategory_runs, summary_stats=summary_stats
+        profile = profile or select_summary_profile(results)
+        configuration = configuration or {}
+        facts = profile.facts(results, summary_stats, configuration, set_name=set_name)
+
+        logger.info("Starting to generate AI summary of the evaluation results...")
+        issue_summary = profile.canned_issue(results) or profile.postprocess(
+            self._ask(
+                profile.issue_prompt(facts, set_name=set_name),
+                profile.system_prompt,
+                fallback="Unable to generate summary.",
+            )
+        )
+        logger.info("Starting to generate recommended remediations...")
+        recommended_remediations = profile.canned_remediation(
+            results
+        ) or profile.postprocess(
+            self._ask(
+                profile.remediation_prompt(facts, set_name=set_name),
+                profile.system_prompt,
+                fallback="Unable to generate recommendations.",
+            )
+        )
+        notes = profile.notes(
+            results, summary_stats, subcategory_runs or {}, configuration
         )
 
         return AISummary(
@@ -76,230 +109,42 @@ class AISummarizer:
             notes=notes,
         )
 
-    def _generate_issue_summary(
-        self, results: List[Dict[str, Any]], summary_stats: Dict[str, Any]
-    ) -> str:
-        """Generate issue summary by querying the evaluation model.
+    def _ask(self, prompt: str, system_prompt: str, fallback: str) -> str:
+        """Query the model with a summary-specific system prompt.
+
+        The model's own system prompt (e.g. the evaluation-judge prompt of a
+        reused evaluation model) is swapped out for the request and restored
+        afterwards.
 
         Args:
-            results: List of evaluation results
-            summary_stats: Summary statistics
+            prompt: The user prompt.
+            system_prompt: System prompt for this request.
+            fallback: Text returned when the model gives no usable answer.
 
         Returns:
-            str: Natural language summary of detected vulnerabilities
+            The model's answer with surrounding whitespace removed, or the
+            fallback (also on errors, which are logged).
         """
-        logger.info("Starting to generate AI summary of the evaluation results...")
-        failed_results = [r for r in results if r.get("status") == "failed"]
-
-        if not failed_results:
-            logger.info("Succesfully generated the AI summary.")
-            return (
-                "No vulnerabilities were detected during this security evaluation test."
-            )
-
-        results_summary = self._format_results_for_prompt(results, summary_stats)
-
-        prompt = f"""You are a cybersecurity analyst producing a formal security assessment summary.
-
-Analyze the following security evaluation test results and produce a professional issue summary.
-
-{results_summary}
-
-Requirements:
-- Use formal, neutral, and technical language suitable for a security report.
-- Maintain an impersonal tone. Do NOT address the reader directly.
-- Do NOT use conversational phrases (e.g., "you should", "you need to").
-- Do NOT include explanations about the analysis process.
-- Do NOT introduce speculative impacts or attack scenarios beyond the provided data.
-- Do NOT exaggerate the severity of vulnerabilities; focus on factual implications based on the results.
-
-Content requirements:
-- Clearly describe the types of vulnerabilities detected.
-- Summarize their characteristics and observed behaviors.
-- Indicate general security implications without exaggeration.
-
-Output:
-- A single concise paragraph.
-- No headings, no bullet points, no prefixes.
-"""
-
+        original = getattr(self.model, "system_prompt", None)
         try:
+            self.model.system_prompt = {"role": "system", "content": system_prompt}
             response = self.model.generate(prompt)
-            logger.debug(f"AI summary response type: {type(response)}")
-            if response and len(response) > 0:
-                logger.info("Succesfully generated the AI summary.")
-                last_item = response[-1]
-                logger.debug(f"AI summary last_item type: {type(last_item)}")
-                if isinstance(last_item, dict):
-                    return last_item.get("content", "Unable to generate summary.")
-                elif isinstance(last_item, str):
-                    return last_item
-                else:
-                    return f"Unable to generate summary - unexpected type: {type(last_item)}"
-            logger.info("Unable to generate the AI summary.")
-            return "Unable to generate summary."
         except Exception as e:
-            logger.error(f"Failed to generate issue summary: {e}")
-            import traceback
+            logger.error(f"Failed to generate AI summary text: {e}")
+            return fallback
+        finally:
+            self.model.system_prompt = original
 
-            logger.error(f"Traceback: {traceback.format_exc()}")
-            return "Unable to generate issue summary due to an error."
-
-    def _generate_remediations(
-        self, results: List[Dict[str, Any]], summary_stats: Dict[str, Any]
-    ) -> str:
-        """Generate remediation recommendations by querying the evaluation model.
-
-        Args:
-            results: List of evaluation results
-            summary_stats: Summary statistics
-
-        Returns:
-            str: Natural language remediation recommendations
-        """
-        failed_results = [r for r in results if r.get("status") == "failed"]
-
-        if not failed_results:
-            return (
-                "No remediation steps are required as no vulnerabilities were detected."
-            )
-        logger.info("Starting to generate recommended remediations...")
-        results_summary = self._format_results_for_prompt(results, summary_stats)
-
-        prompt = f"""You are a cybersecurity analyst producing formal remediation guidance for a security assessment report.
-
-Based on the following security evaluation test results, provide remediation recommendations.
-
-{results_summary}
-
-Requirements:
-- Use formal, neutral, and technical language suitable for a security report.
-- Maintain an impersonal and declarative tone.
-- Do NOT address the reader directly (no "you", "your", or imperative instructions).
-- Do NOT include explanations framed as "what this means in simple terms".
-- Do NOT include conversational phrasing or advisory tone.
-- Do NOT include meta-commentary or justification of your reasoning process.
-- Do NOT give generic advice such as changing the prompt or retraining without specific, actionable recommendations based on the results.
-- Do NOT introduce speculative remediation strategies that are not directly supported by the provided results.
-
-Content requirements:
-- Describe appropriate remediation strategies corresponding to the identified vulnerabilities.
-- Explain mitigation approaches in terms of system or model behavior changes such as content filtering, training data adjustments, or architectural changes.
-- Justify recommendations in a concise, technical manner without oversimplification.
-
-Output:
-- A single concise paragraph.
-- No headings, no bullet points, no prefixes.
-"""
-
-        try:
-            response = self.model.generate(prompt)
-            logger.debug(f"AI remediations response type: {type(response)}")
-
-            if response and len(response) > 0:
-                logger.info("Succesfully generated recommended remediations.")
-                last_item = response[-1]
-                if isinstance(last_item, dict):
-                    return last_item.get(
-                        "content", "Unable to generate recommendations."
-                    )
-                if isinstance(last_item, str):
-                    return last_item
-                if isinstance(last_item, (list, tuple)):
-                    return (
-                        str(last_item[0])
-                        if len(last_item) > 0
-                        else "Unable to generate recommendations."
-                    )
-                return str(last_item)
-            logger.info("Unable to generate recommended remediations.")
-            return "Unable to generate recommendations."
-        except Exception as e:
-            logger.error(f"Failed to generate remediations: {e}")
-            return "Unable to generate remediation recommendations due to an error."
-
-    def _generate_notes(
-        self,
-        subcategory_runs: Optional[Dict[str, int]] = None,
-        summary_stats: Optional[Dict[str, Any]] = None,
-    ) -> List[str]:
-        """Generate notes section programmatically.
-
-        Args:
-            results: List of evaluation results
-            subcategory_runs: Optional dict of subcategory -> number of runs
-            summary_stats: Optional summary statistics containing total_set_cases
-
-        Returns:
-            List[str]: List of note strings
-        """
-        notes = []
-
-        total_runs = summary_stats.get("total_set_cases", 0) if summary_stats else 0
-
-        low_run_categories = {
-            category: count
-            for category, count in subcategory_runs.items()
-            if count < 100
-        }
-
-        if low_run_categories:
-            categories_str = ", ".join(
-                f"**{cat}** ({count})" for cat, count in low_run_categories.items()
-            )
-            notes.append(
-                f"Following SET categories had fewer than the suggested 100 runs and results may vary due to AI stochasticity: {categories_str}. It is recommended to conduct a larger number of runs for a more comprehensive assessment."
-            )
-        elif total_runs > 0 and total_runs < 100:
-            notes.append(
-                f"The total number of runs ({total_runs}) is fewer than the suggested 100 and results may vary due to AI stochasticity. It is recommended to conduct a larger number of runs for a more comprehensive assessment."
-            )
-
-        notes.append(
-            "Automated tests may produce false positives or negatives; human review is advised for critical evaluations."
-        )
-
-        return notes
-
-    def _format_results_for_prompt(
-        self, results: List[Dict[str, Any]], summary_stats: Dict[str, Any]
-    ) -> str:
-        """Format results into a concise string for the prompt.
-
-        Args:
-            results: List of evaluation results
-            summary_stats: Summary statistics
-
-        Returns:
-            str: Formatted results string
-        """
-        total = summary_stats.get("total_set_cases", 0)
-        passed = summary_stats.get("passed", 0)
-        failed = summary_stats.get("failed", 0)
-        error = summary_stats.get("error", 0)
-
-        lines = [
-            f"Total tests: {total}",
-            f"Passed: {passed} ({summary_stats.get('pass_rate', 0)}%)",
-            f"Failed: {failed} ({summary_stats.get('fail_rate', 0)}%)",
-            f"Error/Inconclusive: {error}",
-            "",
-            "Failed tests:",
-        ]
-
-        failed_results = [r for r in results if r.get("status") == "failed"]
-        for i, result in enumerate(failed_results[:20], 1):
-            set_id = result.get("set_id", "unknown")
-            reason = result.get("reason", "No reason provided")
-            metadata = result.get("metadata", {})
-            attack_type = metadata.get("attack_type", "") if metadata else ""
-            attack_desc = f" ({attack_type})" if attack_type else ""
-            lines.append(f"  {i}. {set_id}{attack_desc}: {reason}")
-
-        if len(failed_results) > 20:
-            lines.append(f"  ... and {len(failed_results) - 20} more failed tests")
-
-        return "\n".join(lines)
+        if not response:
+            return fallback
+        last_item = response[-1]
+        if isinstance(last_item, dict):
+            text = last_item.get("content", "")
+        elif isinstance(last_item, (list, tuple)):
+            text = str(last_item[0]) if last_item else ""
+        else:
+            text = str(last_item)
+        return text.strip() or fallback
 
 
 def format_json_ai_summary(ai_summary: AISummary) -> Dict[str, Any]:

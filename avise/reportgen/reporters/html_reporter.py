@@ -5,11 +5,17 @@ from pathlib import Path
 from typing import Dict, Any
 
 from .base import BaseReporter
-from ...pipelines.languagemodel import ReportData, EvaluationResult
+from .html_renderers import ResultRenderer, select_result_renderer
+from ...pipelines.languagemodel import ReportData
 
 
 class HTMLReporter(BaseReporter):
-    """Writes reports in styled HTML format."""
+    """Writes reports in styled HTML format.
+
+    Page chrome (styles, header, summary cards, AI summary, grouping) is shared
+    by every SET. Each result is drawn by the ResultRenderer registered for its
+    domain; see ``avise.reportgen.reporters.html_renderers``.
+    """
 
     format_name = "html"
     file_extension = ".html"
@@ -29,14 +35,44 @@ class HTMLReporter(BaseReporter):
         with open(output_path, "w", encoding="utf-8") as f:
             f.write(html)
 
+    def _report_renderer(self, report_data: ReportData) -> ResultRenderer:
+        """Choose the renderer for report-level sections from the first result.
+
+        Args:
+            report_data: The report being written.
+
+        Returns:
+            The ResultRenderer for the report's domain (the default renderer
+            when the report has no results).
+        """
+        results = getattr(report_data, "results", None) or []
+        return select_result_renderer(results[0] if results else None)
+
+    def _render_context(self, report_data: ReportData) -> Dict[str, Any]:
+        """Build the context dict passed to every ``render_item`` call.
+
+        Args:
+            report_data: The report being written.
+
+        Returns:
+            Dict with "total_results" and "configuration".
+        """
+        return {
+            "total_results": len(getattr(report_data, "results", None) or []),
+            "configuration": getattr(report_data, "configuration", {}) or {},
+        }
+
     def _generate_html(self, report_data: ReportData) -> str:
         """Generate complete HTML report."""
+        self._context = self._render_context(report_data)
         html = self._get_html_header(report_data)
         html += self._get_summary_section(report_data)
 
         # Add AI Summary section
         if report_data.ai_summary:
             html += self._get_ai_summary(report_data.ai_summary)
+
+        html += self._report_renderer(report_data).render_sections(report_data)
 
         # Use grouping if enabled in reporter or report_data
         use_grouping = getattr(self, "group_results", True) and getattr(
@@ -72,33 +108,19 @@ class HTMLReporter(BaseReporter):
         </div>
 """
             for result in results:
-                if isinstance(result, EvaluationResult):
-                    set_ = {
-                        "set_id": result.set_id,
-                        "prompt": result.prompt,
-                        "response": result.response,
-                        "status": result.status,
-                        "reason": result.reason,
-                        "attack_type": result.metadata.get("attack_type", ""),
-                        "detections": result.detections,
-                        "full_conversation": result.metadata.get(
-                            "full_conversation", []
-                        ),
-                        "description": result.metadata.get("description", ""),
-                    }
-                    if result.elm_evaluation:
-                        set_["elm_evaluation"] = result.elm_evaluation
-                else:
-                    set_ = result.to_dict() if hasattr(result, "to_dict") else result
-                html += self._get_set_item(set_)
+                html += self._render_result(result)
         html += "    </div>\n"
         return html
 
     def _calculate_group_stats(self, results: list) -> dict:
         """Calculate stats for a group of results."""
-        passed = sum(1 for r in results if r.status == "passed")
-        failed = sum(1 for r in results if r.status == "failed")
-        error = sum(1 for r in results if r.status == "error")
+        statuses = [
+            r.get("status") if isinstance(r, dict) else getattr(r, "status", None)
+            for r in results
+        ]
+        passed = statuses.count("passed")
+        failed = statuses.count("failed")
+        error = statuses.count("error")
         return {"passed": passed, "failed": failed, "error": error}
 
     def _get_ai_summary(self, ai_summary: Dict[str, Any]) -> str:
@@ -144,7 +166,7 @@ class HTMLReporter(BaseReporter):
         html = re.sub(r"^# (.+)$", r"<h2>\1</h2>", html, flags=re.MULTILINE)
         html = re.sub(r"^\d+\. (.+)$", r"<li>\1</li>", html, flags=re.MULTILINE)
         html = re.sub(r"^- (.+)$", r"<li>\1</li>", html, flags=re.MULTILINE)
-        html = re.sub(r"^\* (.+)$", r"<li>\1</li>", html, re.MULTILINE)
+        html = re.sub(r"^\* (.+)$", r"<li>\1</li>", html, flags=re.MULTILINE)
         html = re.sub(r"\n\n", r"</p><p>", html)
         html = f"<p>{html}</p>"
         html = re.sub(r"<p></p>", r"", html)
@@ -166,6 +188,11 @@ class HTMLReporter(BaseReporter):
             target_info = f"Target: {config['target_system']} |"
         elif "target" in config:
             target_info = f"Target: {config['target']} |"
+
+        renderer = self._report_renderer(report_data)
+        for item in renderer.header_meta(report_data):
+            target_info += f" {self.escape_html(str(item))} |"
+        extra_css = renderer.extra_css()
 
         return f"""<!DOCTYPE html>
 <html lang="en">
@@ -364,7 +391,7 @@ class HTMLReporter(BaseReporter):
         details.set-item[open] > summary .set-header .set-id::after {{
             content: '       ▾';
         }}
-
+{extra_css}
     </style>
 </head>
 <body>
@@ -408,8 +435,29 @@ class HTMLReporter(BaseReporter):
             <div class="number" style="font-size: 28px">[{summary["ci_lower_bound"]:.2f}, {summary["ci_upper_bound"]:.2f}]</div>
             <div class="label">Pass Rate 95% Confidence Interval</div>
         </div>
-    </div>
+    </div>{self._get_verdict_source_line(summary)}
 """
+
+    @staticmethod
+    def _get_verdict_source_line(summary: Dict[str, Any]) -> str:
+        """Build a line stating how many case verdicts each source decided.
+
+        Args:
+            summary: The report's summary statistics.
+
+        Returns:
+            HTML fragment, or an empty string if the summary has no
+            "verdict_sources" entry.
+        """
+        sources = summary.get("verdict_sources")
+        if not sources:
+            return ""
+        return f"""
+    <div class="label-sm" style="margin: -10px 0 20px 0;">
+        Verdicts decided by Evaluators: {sources.get("evaluators", 0)} |
+        decided by Evaluation Language Model: {sources.get("elm", 0)} |
+        unresolved: {sources.get("unresolved", 0)}
+    </div>"""
 
     def _get_results(self, results: list) -> str:
         """Generate list of results."""
@@ -420,74 +468,29 @@ class HTMLReporter(BaseReporter):
         </div>
 """
         for result in results:
-            if isinstance(result, EvaluationResult):
-                set_ = {
-                    "set_id": result.set_id,
-                    "prompt": result.prompt,
-                    "response": result.response,
-                    "status": result.status,
-                    "reason": result.reason,
-                    "attack_type": result.metadata.get("attack_type", ""),
-                    "detections": result.detections,
-                    "full_conversation": result.metadata.get("full_conversation", []),
-                    "description": result.metadata.get("description", ""),
-                }
-                if result.elm_evaluation:
-                    set_["elm_evaluation"] = result.elm_evaluation
-            else:
-                set_ = result.to_dict() if hasattr(result, "to_dict") else result
-            html += self._get_set_item(set_)
+            html += self._render_result(result)
         html += "    </div>\n"
         return html
 
+    def _render_result(self, result: Any) -> str:
+        """Render one result with the renderer registered for its domain.
+
+        Args:
+            result: An EvaluationResult object or its dict form.
+
+        Returns:
+            HTML fragment.
+        """
+        context = getattr(self, "_context", None) or {}
+        return select_result_renderer(result).render_item(result, context)
+
     def _get_set_item(self, set_: Dict[str, Any]) -> str:
-        """Generate HTML for a single SET item."""
-        set_label = set_.get("attack_type") or set_.get("description") or ""
-        if set_label:
-            set_label = f" - {set_label}"
+        """Render a single result dict (kept for callers of the former API).
 
-        elm_html = ""
-        if "elm_evaluation" in set_:
-            elm_html = f"""
-                <div class="elm-eval">
-                    <div class="label-sm">ELM Evaluation</div>
-                    {self.escape_html(set_["elm_evaluation"])}
-                </div>"""
+        Args:
+            set_: A result in dict form.
 
-        # Check for conversation format (memory test)
-        conversation_html = ""
-        if set_.get("full_conversation"):
-            conversation_html = """
-                <div class="label-sm">Conversation</div>
-                <div class="conversation">"""
-            for msg in set_["full_conversation"]:
-                role = msg.get("role", "user")
-                content = self.escape_html(msg.get("content", ""))
-                conversation_html += f"""
-                    <div class="message {role}"><strong>{role}:</strong> {content}</div>"""
-            conversation_html += """
-                </div>"""
-
-        # Use prompt/response for non-conversation SETs
-        prompt_response_html = ""
-        if not conversation_html:
-            prompt_response_html = f"""
-            <div class="label-sm">Prompt</div>
-            <div class="prompt">{self.escape_html(set_.get("prompt", ""))}</div>
-            <div class="label-sm">Response</div>
-            <div class="response">{self.escape_html(set_.get("response", ""))}</div>"""
-
-        return f"""
-        <details class="set-item">
-            <summary>
-                <div class="set-header">
-                    <span class="set-id">{set_["set_id"]}{set_label}</span>
-                    <span class="status {set_["status"]}">{set_["status"]}</span>
-                </div>
-            </summary>
-            {prompt_response_html}
-            {conversation_html}
-            <div class="reason">{self.escape_html(set_.get("reason", ""))}</div>
-            {elm_html}
-        </details>
-"""
+        Returns:
+            HTML fragment.
+        """
+        return self._render_result(set_)
