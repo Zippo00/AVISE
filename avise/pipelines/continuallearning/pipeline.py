@@ -17,6 +17,7 @@ from enum import Enum
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 from math import sqrt
+from statistics import NormalDist
 
 from .schema import (
     ContinualLearningSETCase,
@@ -26,7 +27,6 @@ from .schema import (
 )
 from ...connectors.continuallearning.base import BaseCLConnector
 
-from scipy.special import erfinv
 
 logger = logging.getLogger(__name__)
 
@@ -372,7 +372,11 @@ class BaseSETPipeline(ABC):
             return (0, 0.0, 0.0)
 
         p = passed / n
-        z = 1.96 if confidence_level == 0.95 else sqrt(2) * erfinv(confidence_level)
+        z = (
+            1.96
+            if confidence_level == 0.95
+            else NormalDist().inv_cdf((1 + confidence_level) / 2)
+        )
 
         denominator = 1 + (z**2 / n)
         center = (p + (z**2 / (2 * n))) / denominator

@@ -255,11 +255,21 @@ class ExecutionEngine:
         listings = []
         if sets:
             listings.append(
-                (set_registry, "avise.sets", "Available Security Evaluation Tests", "--SET-list")
+                (
+                    set_registry,
+                    "avise.sets",
+                    "Available Security Evaluation Tests",
+                    "--SET-list",
+                )
             )
         if connectors:
             listings.append(
-                (connector_registry, "avise.connectors", "Available Connectors", "--connector-list")
+                (
+                    connector_registry,
+                    "avise.connectors",
+                    "Available Connectors",
+                    "--connector-list",
+                )
             )
 
         found = True
@@ -296,7 +306,14 @@ class ExecutionEngine:
 
         if reportformats:
             title = "Available Report Formats"
-            print("\n" + (f"{ansi_colors['bold']}{title}{ansi_colors['reset']}" if style.color else title))
+            print(
+                "\n"
+                + (
+                    f"{ansi_colors['bold']}{title}{ansi_colors['reset']}"
+                    if style.color
+                    else title
+                )
+            )
             for format in ReportFormat:
                 print(f"   {format.value}")
         return found

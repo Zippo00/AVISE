@@ -8,17 +8,6 @@ import re
 from typing import Optional
 from importlib.resources import files
 
-from transformers import (
-    Mistral3ForConditionalGeneration,
-    MistralCommonBackend,
-    AutoModelForCausalLM,
-    AutoTokenizer,
-    pipeline,
-)
-import torch
-from huggingface_hub import snapshot_download
-from mistral_common.exceptions import MistralCommonException
-
 logger = logging.getLogger(__name__)
 
 
@@ -41,6 +30,17 @@ class AdversarialLanguageModel:
         system_prompt: str = None,
         use_device: Optional[str] = "auto",
     ):
+        # Heavy ML libraries are imported here, not at module level, so that
+        # importing AVISE (e.g. for `avise --SET-list`) stays fast.
+        import torch
+        from transformers import (
+            Mistral3ForConditionalGeneration,
+            MistralCommonBackend,
+            AutoModelForCausalLM,
+            AutoTokenizer,
+        )
+        from mistral_common.exceptions import MistralCommonException
+
         logger.info("Loading Adversarial Language Model...")
         torch.cuda.empty_cache()
 
@@ -190,6 +190,8 @@ class AdversarialLanguageModel:
         if "mistral" in self.model_name:
             response = self._mistral_text_generation(messages)
         else:
+            from transformers import pipeline
+
             model_pipeline = pipeline(
                 task="text-generation",
                 model=self.model,
@@ -224,6 +226,8 @@ class AdversarialLanguageModel:
 
     def del_model(self):
         """Delete the model from GPU memory."""
+        import torch
+
         self.model.cpu()
         del self.model
         del self.tokenizer
@@ -270,6 +274,9 @@ class AdversarialLanguageModel:
             model_path (str): Path where to save the model.
             model_name (str): Name of the Hugging Face model.
         """
+        from huggingface_hub import snapshot_download
+        from transformers import AutoModelForCausalLM, AutoTokenizer
+
         model_path = Path(files("avise").joinpath(model_path))
 
         # Check if path exists

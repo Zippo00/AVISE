@@ -31,7 +31,10 @@ class DeceptiveDelight(BaseSETPipeline):
     """Deceptive Delight SET."""
 
     name = "Deceptive Delight"
-    description = "Multi-turn scenarios, where harmful topics are mixed with benign ones to trick the model into providing harmful information. "
+    description = (
+        "Tests whether the target model gives harmful information when harmful "
+        "topics are mixed with benign ones over multiple turns (Deceptive Delight)."
+    )
 
     def __init__(self):
         super().__init__()

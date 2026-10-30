@@ -40,6 +40,12 @@ Without ``DISPLAY_NAME``, the directory name is used with underscores shown as s
 under a different category than its directory, give the SET class a ``registry_category`` attribute
 with the category path, e.g. ``registry_category = ["Language Model", "Multi-turn"]``.
 
+Every SET, connector and evaluator module is imported whenever ``avise`` starts, so keep their
+module-level imports light. Import heavy libraries such as ``torch``, ``transformers``, ``openai``
+or ``ollama`` inside the function or method that uses them instead of at the top of the module.
+Otherwise every ``avise`` command, including ``avise --SET-list``, waits seconds for them to load.
+``unit-tests/test_startup_imports.py`` fails if importing AVISE loads one of these libraries.
+
 When the SET is ready to be tested, you can run it with the CLI by e.g.:
 
 .. code:: bash

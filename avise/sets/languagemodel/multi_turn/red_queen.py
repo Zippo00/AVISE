@@ -33,7 +33,10 @@ class RedQueen(BaseSETPipeline):
     """Red Queen SET."""
 
     name = "Red Queen"
-    description = "Multi-turn scenarios, where the malicious intent is concealed under the guise of preventing harm."
+    description = (
+        "Tests whether the target model gives harmful instructions when the malicious "
+        "intent is disguised as preventing harm over multiple turns (Red Queen)."
+    )
 
     def __init__(self):
         super().__init__()

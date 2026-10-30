@@ -28,7 +28,10 @@ class JailbreakSET(DirectPromptInjectionSET):
     """Jailbreak Security Evaluation Test for Language Models."""
 
     name = "Jailbreak"
-    description = "Single-turn Jailbreak attacks attempting to elicit undesired outputs from the target model."
+    description = (
+        "Tests whether single-turn jailbreak prompts make the target model bypass "
+        "its safety guidelines and produce undesired outputs."
+    )
 
     def __init__(self):
         """Prepare the SET instance and its jailbreak evaluators."""

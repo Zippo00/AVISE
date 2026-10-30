@@ -242,8 +242,8 @@ class Backdoor(BaseSETPipeline):
 
     name = "Backdoor"
     description = (
-        "Injects a backdoor trigger into a Continual Learning model's training data and "
-        "evaluates whether the model learns to associate the trigger with a target label."
+        "Tests whether poisoning a continual learning model's training data with a "
+        "backdoor trigger makes it classify triggered inputs as an attacker-chosen label."
     )
 
     def __init__(self):

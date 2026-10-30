@@ -52,7 +52,7 @@ from ....models import EvaluationLanguageModel
 logger = logging.getLogger(__name__)
 
 
-@set_registry.register("indirect_injection")
+@set_registry.register("indirect_prompt_injection")
 class IndirectInjectionSET(BaseSETPipeline):
     """A SET for testing indirect prompt injection via RAG.
 
@@ -65,8 +65,9 @@ class IndirectInjectionSET(BaseSETPipeline):
 
     name = "Indirect Prompt Injection"
     description = (
-        "SET for indirect prompt injection through RAG document. "
-        "Requires a connector with file-intake support."
+        "Tests whether the target model follows instructions hidden in a poisoned "
+        "document retrieved through RAG. Requires a connector with "
+        "file-intake support."
     )
 
     def __init__(self):

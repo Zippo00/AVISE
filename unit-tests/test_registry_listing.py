@@ -250,29 +250,73 @@ def test_render_plain_tree(registry):
     )
 
 
-def test_render_ascii_and_truncation(registry):
+LONG = "one two three four five six seven eight nine ten"
+
+
+def test_render_wraps_descriptions_beside_names(registry):
     root = registry.grouped("fakeroot").filter("single_turn")
-    descriptions = {"alpha_injection": "x" * 100}
-    style = TerminalStyle(unicode=False, width=50)
+    descriptions = {"alpha_injection": LONG, "zeta_jailbreak": "short"}
+
+    output = render_registry_tree(root, "SETs", descriptions, TerminalStyle(width=60))
+
+    assert output == (
+        "SETs (2)\n"
+        "\n"
+        "Language Model (2)\n"
+        "└── Single-turn (2)\n"
+        "    ├── alpha_injection  one two three four five six seven\n"
+        "    │                    eight nine ten\n"
+        "    │\n"
+        "    └── zeta_jailbreak   short\n"
+    )
+
+
+def test_render_stacks_descriptions_on_narrow_terminals(registry):
+    root = registry.grouped("fakeroot").filter("single_turn")
+    descriptions = {"alpha_injection": LONG, "zeta_jailbreak": "short"}
+    style = TerminalStyle(unicode=False, width=40)
 
     output = render_registry_tree(root, "SETs", descriptions, style)
 
-    line = next(l for l in output.splitlines() if "alpha_injection" in l)
-    assert line.startswith("    |-- alpha_injection")
-    assert len(line) == 50 and line.endswith("...")
-    assert "`-- zeta_jailbreak" in output
-    assert "├" not in output
-
-
-def test_render_drops_descriptions_on_narrow_terminals(registry):
-    root = registry.grouped("fakeroot").filter("single_turn")
-
-    output = render_registry_tree(
-        root, "SETs", {"alpha_injection": "desc"}, TerminalStyle(width=30)
+    assert output == (
+        "SETs (2)\n"
+        "\n"
+        "Language Model (2)\n"
+        "`-- Single-turn (2)\n"
+        "    |-- alpha_injection\n"
+        "    |   one two three four five six\n"
+        "    |   seven eight nine ten\n"
+        "    |\n"
+        "    `-- zeta_jailbreak\n"
+        "        short\n"
     )
 
-    assert "desc" not in output
-    assert "alpha_injection" in output
+
+def test_render_adds_no_spacers_when_nothing_wraps(registry):
+    root = registry.grouped("fakeroot").filter("single_turn")
+    descriptions = {"alpha_injection": "short", "zeta_jailbreak": "short"}
+
+    output = render_registry_tree(root, "SETs", descriptions, TerminalStyle(width=60))
+
+    assert "    │\n" not in output
+    assert len(output.splitlines()) == 6
+
+
+@pytest.mark.parametrize("width", [40, 60, 80, 120])
+def test_render_real_sets_fits_terminal_width(width):
+    descriptions = {
+        name: getattr(set_registry.get(name), "description", "")
+        for name in set_registry.list()
+    }
+
+    output = render_registry_tree(
+        set_registry.grouped("avise.sets"), "SETs", descriptions, TerminalStyle(width=width)
+    )
+
+    assert max(len(line) for line in output.splitlines()) <= width
+    for description in descriptions.values():
+        # Every word of every description is shown; nothing is cut off
+        assert all(word in output for word in description.split())
 
 
 def test_render_color(registry):
@@ -319,7 +363,7 @@ def test_detect_style_for_pipe():
 
 def test_detect_style_for_tty(monkeypatch):
     monkeypatch.delenv("NO_COLOR", raising=False)
-    style = detect_terminal_style(_FakeStream(tty=True, encoding="cp437"))
+    style = detect_terminal_style(_FakeStream(tty=True, encoding="latin-1"))
 
     assert style.color is True
     assert style.unicode is False

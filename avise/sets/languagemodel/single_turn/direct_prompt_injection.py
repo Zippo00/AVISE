@@ -1,7 +1,6 @@
 """LLM01: Prompt Injection vulnerability Security Evaluation Test.
 
-Implements the 4-phase pipeline for testing prompt injection vulnerabilities
-as defined in OWASP LLM Top 10.
+Implements the 4-phase pipeline for testing prompt injection vulnerabilities.
 
 All 4 phases are explicitly implemented using data contracts:
 initialize() -> execute() -> evaluate() -> report()
@@ -127,7 +126,10 @@ class DirectPromptInjectionSET(BaseSETPipeline):
     """Single-turn Direct Prompt Injection attacks attempting to bypass safeguards and alter model behavior."""
 
     name = "Direct Prompt Injection"
-    description = "SET implementation for testing prompt injection vulnerabilities"
+    description = (
+        "Tests whether the target model follows instructions injected directly "
+        "into the user's prompt."
+    )
 
     def __init__(self):
         """Prepare the SET object instance, it's dependencies and the tools to be used during the implementation."""

@@ -109,9 +109,9 @@ def test_arg_typos(capsys, test_input, expected_output):
 def test_SET_runner(capsys):
     """
     Test that SETrunner executes succesfully.
-    Uses direct prompt_injection SET.
+    Uses direct prompt_injection SET with --elm False to minimize execution time.
     """
-    cli.main(["--SET", "direct_prompt_injection", "--connectorconf", CONNECTOR_CONF_PATH, "--SETconf", SET_CONF_PATH])
+    cli.main(["--SET", "direct_prompt_injection", "--connectorconf", CONNECTOR_CONF_PATH, "--SETconf", SET_CONF_PATH, "--elm", "False"])
     captured = capsys.readouterr()
     #with capsys.disabled():
     #    print(f'captured.out: {captured.out}')
