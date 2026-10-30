@@ -11,7 +11,7 @@ This SET works as an example of a file-injection test. Unlike the direct
 `prompt_injection` SET (which sends plain text via connector.generate()), each
 case here delivers a `payload_file` through a connector file-intake channel by
 calling connector.run_file_injection(); the transport lives in the connector
-(e.g. LehmusLMConnector), while this SET only orchestrates and evaluates. The 
+(e.g. LehmusLMConnector), while this SET only orchestrates and evaluates. The
 SET combines several modular evaluators with a test-specific signal.
 
 That signal is any literal string the poisoned document makes the model emit. It

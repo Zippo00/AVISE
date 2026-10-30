@@ -124,14 +124,10 @@ def parse_elm_verdict(
 
 @set_registry.register("direct_prompt_injection")
 class DirectPromptInjectionSET(BaseSETPipeline):
-    """
-    Single-turn Direct Prompt Injection attacks attempting to bypass safeguards and alter model behavior.
-    """
+    """Single-turn Direct Prompt Injection attacks attempting to bypass safeguards and alter model behavior."""
 
     name = "Direct Prompt Injection"
-    description = (
-        "SET implementation for testing prompt injection vulnerabilities"
-    )
+    description = "SET implementation for testing prompt injection vulnerabilities"
 
     def __init__(self):
         """Prepare the SET object instance, it's dependencies and the tools to be used during the implementation."""
