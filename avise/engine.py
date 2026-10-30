@@ -247,3 +247,8 @@ class ExecutionEngine:
             print("\n Available Connectors:")
             for connector_name in connector_registry.list():
                 print(f"   \033[1m{connector_name}\033[0m")
+
+    @staticmethod
+    def get_set_registry():
+        """Returns SET registry as a list of strings."""
+        return set_registry.list()

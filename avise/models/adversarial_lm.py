@@ -17,6 +17,7 @@ from transformers import (
 )
 import torch
 from huggingface_hub import snapshot_download
+from mistral_common.exceptions import MistralCommonException
 
 logger = logging.getLogger(__name__)
 
@@ -79,7 +80,7 @@ class AdversarialLanguageModel:
                 self.tokenizer = AutoTokenizer.from_pretrained(
                     self.model_path
                 )  # , attn_implementation="eager"
-        except (FileNotFoundError, IOError, ValueError):
+        except (FileNotFoundError, IOError, ValueError, MistralCommonException):
             logger.error(
                 "Adversarial model not found locally. Downloading it from Hugging Face..."
             )
