@@ -66,6 +66,7 @@ class FileIntake(str, Enum):
 @dataclass
 class LehmusConfig:
     """Data class containing configurations for a Lehmus Connector."""
+
     connector_id: str = "lehmus"
     base_url: Optional[str] = None
     api_key: Optional[str] = None
@@ -227,6 +228,7 @@ class LehmusConfig:
 @dataclass
 class InjectionResult:
     """Data class. Contains results of a SET case."""
+
     response_text: str
     channel: Optional[FileIntake] = None  # which vector produced this
     raw: dict[str, Any] = field(default_factory=dict)
