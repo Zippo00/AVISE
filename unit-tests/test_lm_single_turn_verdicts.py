@@ -74,7 +74,7 @@ class FakeEvaluator:
 
 
 def _pi_set(elm=None, vulnerability=False, refusal=False):
-    """Build a PromptInjectionSET with stubbed evaluators.
+    """Build a DirectPromptInjectionSET with stubbed evaluators.
 
     Args:
         elm: Optional FakeELM.
@@ -84,7 +84,7 @@ def _pi_set(elm=None, vulnerability=False, refusal=False):
     Returns:
         The configured SET instance.
     """
-    set_ = PromptInjectionSET()
+    set_ = DirectPromptInjectionSET()
     set_.vulnerability_evaluator = FakeEvaluator(vulnerability, ["vuln-pattern"])
     set_.refusal_evaluator = FakeEvaluator(refusal, ["refusal-pattern"])
     set_.partial_compliance_evaluator = FakeEvaluator(False)
@@ -294,7 +294,7 @@ def _write_config(tmp_path, **extra):
 
 
 def test_initialize_accepts_custom_verdict_labels(tmp_path):
-    set_ = PromptInjectionSET()
+    set_ = DirectPromptInjectionSET()
     labels = {"failed": ["FAILED"], "passed": "PASSED"}
 
     set_.initialize(_write_config(tmp_path, elm_verdict_labels=labels))
@@ -319,7 +319,7 @@ def test_initialize_accepts_custom_verdict_labels(tmp_path):
 def test_initialize_rejects_invalid_verdict_labels(tmp_path, labels, message):
     path = _write_config(tmp_path, elm_verdict_labels=labels)
     with pytest.raises(ValueError, match=message) as excinfo:
-        PromptInjectionSET().initialize(path)
+        DirectPromptInjectionSET().initialize(path)
     assert "elm_verdict_labels" in str(excinfo.value)
     assert path in str(excinfo.value)
 

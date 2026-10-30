@@ -4,15 +4,15 @@ Unit tests for AVISE CLI
 import pytest
 from avise import cli, __version__
 
-SET_CONF_PATH = "avise/configs/SET//languagemodel/single_turn/prompt_injection.json"
+SET_CONF_PATH = "avise/configs/SET//languagemodel/single_turn/direct_prompt_injection.json"
 CONNECTOR_CONF_PATH = "avise/configs/connector/languagemodel/ollama.json"
 
 test_incorrect_args_cases = [("--incorrectargument", "unrecognized argument"),
-                             (f"--SET prompt_injection --connectorconf {CONNECTOR_CONF_PATH} --SETcof {SET_CONF_PATH}", "unrecognized argument")]
-test_missing_args_cases=[(f"--SET prompt_injection --SETconf {SET_CONF_PATH}", "is required"),
+                             (f"--SET direct_prompt_injection --connectorconf {CONNECTOR_CONF_PATH} --SETcof {SET_CONF_PATH}", "unrecognized argument")]
+test_missing_args_cases=[(f"--SET direct_prompt_injection --SETconf {SET_CONF_PATH}", "is required"),
                          (f"--connectorconf {CONNECTOR_CONF_PATH} --SETconf {SET_CONF_PATH}", "is required")]
-test_arg_typos_cases=[(f"--SET prompt_injection --connectorconf this/file/should/not/exits.json --SETconf {SET_CONF_PATH}","FileNotFoundError"),
-                      (f"--SET prompt_injection --connectorconf {CONNECTOR_CONF_PATH} --SETconf this/file/should/not/exist.json", "FileNotFoundError"),
+test_arg_typos_cases=[(f"--SET direct_prompt_injection --connectorconf this/file/should/not/exits.json --SETconf {SET_CONF_PATH}","FileNotFoundError"),
+                      (f"--SET direct_prompt_injection --connectorconf {CONNECTOR_CONF_PATH} --SETconf this/file/should/not/exist.json", "FileNotFoundError"),
                       ]
 test_arg_datatypes_cases=[(123090, TypeError),
                           (123.231, TypeError),
@@ -47,7 +47,7 @@ def test_SET_list(capsys):
     #with capsys.disabled():
     #    print(f'captured.out: {captured.out}')
     # Add strings from expected SET_list output here
-    assert "prompt_injection" in captured.out
+    assert "direct_prompt_injection" in captured.out
 
 def test_too_long_arg():
     """
@@ -109,9 +109,9 @@ def test_arg_typos(capsys, test_input, expected_output):
 def test_SET_runner(capsys):
     """
     Test that SETrunner executes succesfully.
-    Uses prompt_injection SET.
+    Uses direct prompt_injection SET.
     """
-    cli.main(["--SET", "prompt_injection", "--connectorconf", CONNECTOR_CONF_PATH, "--SETconf", SET_CONF_PATH])
+    cli.main(["--SET", "direct_prompt_injection", "--connectorconf", CONNECTOR_CONF_PATH, "--SETconf", SET_CONF_PATH])
     captured = capsys.readouterr()
     #with capsys.disabled():
     #    print(f'captured.out: {captured.out}')
