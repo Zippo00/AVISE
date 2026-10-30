@@ -52,7 +52,10 @@ _DETECTION_RENDERERS: Dict[str, "DetectionRenderer"] = {}
 # poisoned_inputs is a list of digests for offline scoring of defences; it is
 # kept in the JSON report but not shown in HTML.
 _HIDDEN_METADATA = {
-    "vulnerability_subcategory", "report_renderer", "verdict_basis", "poisoned_inputs",
+    "vulnerability_subcategory",
+    "report_renderer",
+    "verdict_basis",
+    "poisoned_inputs",
 }
 
 VERDICT_BASIS_KEY = "verdict_basis"
@@ -286,7 +289,10 @@ class DetectionRenderer:
         return "informational", "neutral"
 
     def verdict(
-        self, findings: Dict[str, Any], susceptible: Optional[bool], context: Dict[str, Any]
+        self,
+        findings: Dict[str, Any],
+        susceptible: Optional[bool],
+        context: Dict[str, Any],
     ) -> Optional[Dict[str, Any]]:
         """Explain how this evaluator's findings decide the case's verdict.
 
@@ -332,10 +338,14 @@ class DetectionRenderer:
         line_html = f'<div class="detection-line">{esc(line)}</div>' if line else ""
 
         reason = findings.get("reason")
-        reason_html = f'<div class="detection-reason">{esc(reason)}</div>' if reason else ""
+        reason_html = (
+            f'<div class="detection-reason">{esc(reason)}</div>' if reason else ""
+        )
         body = self.body(findings, context)
         table = kv_table(
-            findings, skip={"reason", "evaluator", *self.detail_skip(findings)}, tips=self.glossary
+            findings,
+            skip={"reason", "evaluator", *self.detail_skip(findings)},
+            tips=self.glossary,
         )
         if table:
             table = (
@@ -365,7 +375,9 @@ class DetectionRenderer:
 _FALLBACK = DetectionRenderer()
 
 
-def register_detection_renderer(cls: Type[DetectionRenderer]) -> Type[DetectionRenderer]:
+def register_detection_renderer(
+    cls: Type[DetectionRenderer],
+) -> Type[DetectionRenderer]:
     """Register a DetectionRenderer subclass for its evaluators (class decorator).
 
     Args:
@@ -423,7 +435,9 @@ def split_detection(entry: Any) -> Tuple[Optional[bool], Dict[str, Any]]:
     return (verdict if isinstance(verdict, bool) else None), entry
 
 
-def _ordered_detections(detections: Dict[str, Any]) -> List[Tuple[str, Any, DetectionRenderer]]:
+def _ordered_detections(
+    detections: Dict[str, Any],
+) -> List[Tuple[str, Any, DetectionRenderer]]:
     """Pair each detection with its renderer, sorted by renderer order.
 
     Args:
@@ -468,7 +482,9 @@ def verdict_basis(data: Dict[str, Any]) -> List[str]:
         return [basis]
     if isinstance(basis, (list, tuple)):
         return [b for b in basis if isinstance(b, str)]
-    return [k for k in (data.get("detections") or {}) if get_detection_renderer(k).primary]
+    return [
+        k for k in (data.get("detections") or {}) if get_detection_renderer(k).primary
+    ]
 
 
 def _case_plan(configuration: Dict[str, Any], set_id: str) -> Optional[Dict[str, Any]]:
@@ -573,7 +589,8 @@ class ContinualLearningResultRenderer(ResultRenderer):
         tiles = headline_tiles(detections, ctx)
         tiles_html = (
             f'<div class="subsection-title">Key measurements</div>{metric_tiles(tiles)}'
-            if tiles else ""
+            if tiles
+            else ""
         )
 
         if detections:
@@ -594,11 +611,15 @@ class ContinualLearningResultRenderer(ResultRenderer):
         if data.get("baseline_metrics"):
             extras += (
                 '<div class="label-sm">Baseline metrics</div>'
-                f'{kv_table(data["baseline_metrics"])}'
+                f"{kv_table(data['baseline_metrics'])}"
             )
-        shown_metadata = {k: v for k, v in metadata.items() if k not in _HIDDEN_METADATA}
+        shown_metadata = {
+            k: v for k, v in metadata.items() if k not in _HIDDEN_METADATA
+        }
         if shown_metadata:
-            extras += f'<div class="label-sm">Case metadata</div>{kv_table(shown_metadata)}'
+            extras += (
+                f'<div class="label-sm">Case metadata</div>{kv_table(shown_metadata)}'
+            )
 
         return f"""
         <details class="set-item"{is_open}>
@@ -615,7 +636,9 @@ class ContinualLearningResultRenderer(ResultRenderer):
         </details>
 """
 
-    def _verdict_box(self, data: Dict[str, Any], basis: List[str], ctx: Dict[str, Any]) -> str:
+    def _verdict_box(
+        self, data: Dict[str, Any], basis: List[str], ctx: Dict[str, Any]
+    ) -> str:
         """Render the explanation of why the case passed, failed or was inconclusive.
 
         Args:
@@ -652,7 +675,9 @@ class ContinualLearningResultRenderer(ResultRenderer):
             title = renderer.title or humanize(name)
             explained = renderer.verdict(findings, susceptible, ctx)
             if explained is None:
-                outcome = {True: "susceptible", False: "not susceptible"}.get(susceptible, "no verdict")
+                outcome = {True: "susceptible", False: "not susceptible"}.get(
+                    susceptible, "no verdict"
+                )
                 parts.append(
                     f"<p>The verdict follows the <strong>{esc(title)}</strong> evaluator, "
                     f"which found the target <strong>{esc(outcome)}</strong>.</p>"
@@ -662,8 +687,10 @@ class ContinualLearningResultRenderer(ResultRenderer):
             for i, c in enumerate(explained.get("conditions") or [], 1):
                 met = c.get("met")
                 mark = (
-                    '<span class="mark ok">&#10003; met</span>' if met is True
-                    else '<span class="mark no">&#10007; not met</span>' if met is False
+                    '<span class="mark ok">&#10003; met</span>'
+                    if met is True
+                    else '<span class="mark no">&#10007; not met</span>'
+                    if met is False
                     else '<span class="mark na">not applicable</span>'
                 )
                 rows += (
@@ -674,7 +701,8 @@ class ContinualLearningResultRenderer(ResultRenderer):
             table = (
                 '<table class="grid verdict-table"><tr><th>#</th><th>Condition</th>'
                 f"<th>Required</th><th>Measured</th><th>Result</th></tr>{rows}</table>"
-                if rows else ""
+                if rows
+                else ""
             )
             parts.append(
                 f"<p>{esc(explained.get('rule', ''))}</p>{table}"
@@ -683,7 +711,7 @@ class ContinualLearningResultRenderer(ResultRenderer):
 
         if not parts:
             parts.append(
-                f"<p>{esc(reason)}</p><p class=\"note\">This report does not record which "
+                f'<p>{esc(reason)}</p><p class="note">This report does not record which '
                 "evaluator the verdict was derived from.</p>"
             )
 
@@ -695,7 +723,8 @@ class ContinualLearningResultRenderer(ResultRenderer):
         footnote = (
             f'<p class="note">{esc(", ".join(supporting))} describe side effects and stealth of '
             "the attack. They are reported for context and do not change the verdict.</p>"
-            if supporting else ""
+            if supporting
+            else ""
         )
         return f"""
             <div class="verdict {status}">
@@ -717,12 +746,16 @@ class ContinualLearningResultRenderer(ResultRenderer):
         html = ""
         config = dict(getattr(report_data, "configuration", {}) or {})
         if config:
-            cases = [c for c in config.pop("set_cases", None) or [] if isinstance(c, dict)]
+            cases = [
+                c for c in config.pop("set_cases", None) or [] if isinstance(c, dict)
+            ]
             shown = {
                 k: CONFIG_VALUE_FORMATTERS[k](v) if k in CONFIG_VALUE_FORMATTERS else v
                 for k, v in config.items()
             }
-            sequences = "".join(self._task_sequence(c, config, len(cases) > 1) for c in cases)
+            sequences = "".join(
+                self._task_sequence(c, config, len(cases) > 1) for c in cases
+            )
             if sequences:
                 sequences = (
                     f'<div class="subsection-title">Task sequence{tip(CONFIG_GLOSSARY.get("set_cases"))}</div>'
@@ -746,11 +779,15 @@ class ContinualLearningResultRenderer(ResultRenderer):
 """
         results = list(getattr(report_data, "results", []) or [])
         if len(results) > 1:
-            html += self._overview(results, getattr(report_data, "configuration", {}) or {})
+            html += self._overview(
+                results, getattr(report_data, "configuration", {}) or {}
+            )
         return html
 
     @staticmethod
-    def _task_sequence(case: Dict[str, Any], config: Dict[str, Any], show_id: bool) -> str:
+    def _task_sequence(
+        case: Dict[str, Any], config: Dict[str, Any], show_id: bool
+    ) -> str:
         """Render one case's task sequence as a table, highlighting poisoned stages.
 
         Args:
@@ -782,9 +819,13 @@ class ContinualLearningResultRenderer(ResultRenderer):
                 f'<td title="{esc(eval_full)}">{esc(eval_txt)}</td></tr>'
             )
             after_inject = after_inject or is_inject
-        heading = f'<div class="label-sm">Case {esc(case.get("id", ""))}</div>' if show_id else ""
+        heading = (
+            f'<div class="label-sm">Case {esc(case.get("id", ""))}</div>'
+            if show_id
+            else ""
+        )
         return (
-            f"{heading}<table class=\"grid stages\"><tr><th>#</th><th>Stage</th>"
+            f'{heading}<table class="grid stages"><tr><th>#</th><th>Stage</th>'
             "<th>What happens</th><th>Training / query data</th><th>Held-out evaluation data</th>"
             f"</tr>{rows}</table>"
         )
@@ -815,12 +856,15 @@ class ContinualLearningResultRenderer(ResultRenderer):
                     columns.append(label)
             rows.append((data, tiles))
 
-        head = "<th>Case</th><th>Status</th>" + "".join(f"<th>{esc(c)}</th>" for c in columns)
+        head = "<th>Case</th><th>Status</th>" + "".join(
+            f"<th>{esc(c)}</th>" for c in columns
+        )
         body = ""
         for data, tiles in rows:
             status = data.get("status", "error")
             cells = "".join(
-                f'<td class="tone-{tiles[c][2]}">{esc(tiles[c][1])}</td>' if c in tiles
+                f'<td class="tone-{tiles[c][2]}">{esc(tiles[c][1])}</td>'
+                if c in tiles
                 else '<td class="muted">-</td>'
                 for c in columns
             )
@@ -896,9 +940,7 @@ def _label_text(label: Any) -> str:
     return f"the target label ({label})" if label is not None else "the target label"
 
 
-L2_EXPLANATION = (
-    'L2 is the Euclidean length of a list of numbers: square every value, add them up and take the square root (the straight-line distance used in geometry). '
-)
+L2_EXPLANATION = "L2 is the Euclidean length of a list of numbers: square every value, add them up and take the square root (the straight-line distance used in geometry). "
 
 ASR_EXPLANATION = (
     "Attack success rate: the share of triggered test inputs that the model classifies as the "
@@ -964,12 +1006,18 @@ class BackdoorInjectionSuccessRenderer(DetectionRenderer):
             if post is None:
                 return "backdoor implanted", "failed"
             return "backdoor implanted and persisted", "failed"
-        if findings.get("injection_successful") and findings.get("backdoor_survived_drift") is False:
+        if (
+            findings.get("injection_successful")
+            and findings.get("backdoor_survived_drift") is False
+        ):
             return f"implanted, faded to {fmt_percent(post)}", "error"
         if asr == 0:
             return "no trigger effect (ASR 0%)", "passed"
         if t is not None:
-            return f"ASR {fmt_percent(asr)}, below {fmt_percent(t, 0)} threshold", "passed"
+            return (
+                f"ASR {fmt_percent(asr)}, below {fmt_percent(t, 0)} threshold",
+                "passed",
+            )
         return f"ASR {fmt_percent(asr)}", "neutral"
 
     def headline(self, findings: Dict[str, Any], context: Dict[str, Any]) -> List[Tile]:
@@ -983,15 +1031,21 @@ class BackdoorInjectionSuccessRenderer(DetectionRenderer):
             Tiles for the injection and post-drift ASR.
         """
         tiles = [
-            ("ASR at injection", fmt_percent(findings.get("asr_at_injection")),
-             _tone(findings.get("injection_successful")),
-             "Measured right after the poisoned training. " + ASR_EXPLANATION),
+            (
+                "ASR at injection",
+                fmt_percent(findings.get("asr_at_injection")),
+                _tone(findings.get("injection_successful")),
+                "Measured right after the poisoned training. " + ASR_EXPLANATION,
+            ),
         ]
         if findings.get("asr_post_drift") is not None:
             tiles.append(
-                ("ASR after drift", fmt_percent(findings.get("asr_post_drift")),
-                 _tone(findings.get("backdoor_survived_drift")),
-                 self.glossary["asr_post_drift"])
+                (
+                    "ASR after drift",
+                    fmt_percent(findings.get("asr_post_drift")),
+                    _tone(findings.get("backdoor_survived_drift")),
+                    self.glossary["asr_post_drift"],
+                )
             )
         return tiles
 
@@ -1013,7 +1067,10 @@ class BackdoorInjectionSuccessRenderer(DetectionRenderer):
         return line
 
     def verdict(
-        self, findings: Dict[str, Any], susceptible: Optional[bool], context: Dict[str, Any]
+        self,
+        findings: Dict[str, Any],
+        susceptible: Optional[bool],
+        context: Dict[str, Any],
     ) -> Optional[Dict[str, Any]]:
         """Explain the two-condition rule: the backdoor must work and must last.
 
@@ -1036,7 +1093,7 @@ class BackdoorInjectionSuccessRenderer(DetectionRenderer):
         conditions = [
             {
                 "condition": "The backdoor works right after the poisoned training "
-                             f"(share of triggered inputs classified as {target})",
+                f"(share of triggered inputs classified as {target})",
                 "required": required,
                 "measured": fmt_percent(at_inject),
                 "met": injected if isinstance(injected, bool) else None,
@@ -1069,7 +1126,7 @@ class BackdoorInjectionSuccessRenderer(DetectionRenderer):
             conclusion = "The case PASSED: the conditions above were not all met."
         return {
             "rule": "The attack succeeds, and the case fails, only if the backdoor both works and "
-                    "lasts. Both conditions must be met:",
+            "lasts. Both conditions must be met:",
             "conditions": conditions,
             "conclusion": conclusion,
         }
@@ -1085,9 +1142,13 @@ class BackdoorInjectionSuccessRenderer(DetectionRenderer):
         Returns:
             HTML fragment, or "" when no ASR was measured.
         """
-        curve = [p for p in findings.get("persistence_curve") or [] if isinstance(p, dict)]
+        curve = [
+            p for p in findings.get("persistence_curve") or [] if isinstance(p, dict)
+        ]
         curve.sort(key=lambda p: p.get("stage_index", 0))
-        staged = [(p.get("stage_index"), str(p.get("stage", "")), p.get("asr")) for p in curve]
+        staged = [
+            (p.get("stage_index"), str(p.get("stage", "")), p.get("asr")) for p in curve
+        ]
 
         inject_index = None
         case = context.get("case") or {}
@@ -1106,7 +1167,11 @@ class BackdoorInjectionSuccessRenderer(DetectionRenderer):
             while split < len(staged) and staged[split][2] is None:
                 split += 1
         pairs = [(name, asr) for _, name, asr in staged]
-        points = pairs[:split] + [("inject", findings.get("asr_at_injection"))] + pairs[split:]
+        points = (
+            pairs[:split]
+            + [("inject", findings.get("asr_at_injection"))]
+            + pairs[split:]
+        )
 
         chart = line_chart_svg(
             points,
@@ -1125,16 +1190,22 @@ class BackdoorInjectionSuccessRenderer(DetectionRenderer):
         note = (
             f'<div class="note">{unmeasured} stage(s) have no ASR because they ran before the backdoor '
             "was injected; they are omitted from the chart.</div>"
-            if unmeasured else ""
+            if unmeasured
+            else ""
         )
         return f"""
-                <div class="label-sm">Backdoor persistence across continual-learning stages{tip(
-                    "How the attack success rate develops as the model keeps learning new tasks "
-                    "after the attack. A line that stays above the dashed threshold means the "
-                    "backdoor persists; a falling line means the model is forgetting it.")}</div>
+                <div class="label-sm">Backdoor persistence across continual-learning stages{
+            tip(
+                "How the attack success rate develops as the model keeps learning new tasks "
+                "after the attack. A line that stays above the dashed threshold means the "
+                "backdoor persists; a falling line means the model is forgetting it."
+            )
+        }</div>
                 <div class="chart-row">
                     {chart}
-                    <table class="grid compact"><tr><th>Stage</th><th>ASR{tip(ASR_EXPLANATION)}</th></tr>{rows}</table>
+                    <table class="grid compact"><tr><th>Stage</th><th>ASR{
+            tip(ASR_EXPLANATION)
+        }</th></tr>{rows}</table>
                 </div>
                 {note}"""
 
@@ -1239,7 +1310,9 @@ class CleanAccuracyDropRenderer(DetectionRenderer):
             if isinstance(drop, (int, float)) and isinstance(threshold, (int, float))
             else None
         )
-        return [("Clean accuracy drop", fmt_percent(drop), _tone(flag), self.description)]
+        return [
+            ("Clean accuracy drop", fmt_percent(drop), _tone(flag), self.description)
+        ]
 
     def summary_line(self, findings: Dict[str, Any], context: Dict[str, Any]) -> str:
         """Return the before/after accuracy and when it was measured.
@@ -1253,8 +1326,10 @@ class CleanAccuracyDropRenderer(DetectionRenderer):
             threshold 5%)".
         """
         # Reports written before the field existed always measured at eval.
-        when = {"inject": " right after injection", "eval": " at the end of the test"}.get(
-            findings.get("measured_after", "eval"), "")
+        when = {
+            "inject": " right after injection",
+            "eval": " at the end of the test",
+        }.get(findings.get("measured_after", "eval"), "")
         return (
             f"Accuracy {fmt_percent(findings.get('baseline_accuracy'))} → "
             f"{fmt_percent(findings.get('post_injection_accuracy'))}{when} "
@@ -1274,18 +1349,42 @@ class CleanAccuracyDropRenderer(DetectionRenderer):
         """
         # Reports written before the field existed always measured at eval.
         measured_after = findings.get("measured_after", "eval")
-        label = "Accuracy at end of test" if measured_after == "eval" else "Right after injection"
+        label = (
+            "Accuracy at end of test"
+            if measured_after == "eval"
+            else "Right after injection"
+        )
         tiles = [
-            ("Baseline accuracy", fmt_percent(findings.get("baseline_accuracy")), "neutral",
-             self.glossary["baseline_accuracy"]),
-            (label, fmt_percent(findings.get("post_injection_accuracy")), "neutral",
-             self.glossary["post_injection_accuracy"]),
+            (
+                "Baseline accuracy",
+                fmt_percent(findings.get("baseline_accuracy")),
+                "neutral",
+                self.glossary["baseline_accuracy"],
+            ),
+            (
+                label,
+                fmt_percent(findings.get("post_injection_accuracy")),
+                "neutral",
+                self.glossary["post_injection_accuracy"],
+            ),
         ]
         if measured_after == "inject" and "end_of_test_accuracy" in findings:
-            tiles.append(("At end of test (not counted)", fmt_percent(findings["end_of_test_accuracy"]),
-                          "neutral", self.glossary["end_of_test_accuracy"]))
-        tiles.append(("Threshold", fmt_percent(findings.get("threshold")), "neutral",
-                      self.glossary["threshold"]))
+            tiles.append(
+                (
+                    "At end of test (not counted)",
+                    fmt_percent(findings["end_of_test_accuracy"]),
+                    "neutral",
+                    self.glossary["end_of_test_accuracy"],
+                )
+            )
+        tiles.append(
+            (
+                "Threshold",
+                fmt_percent(findings.get("threshold")),
+                "neutral",
+                self.glossary["threshold"],
+            )
+        )
         return metric_tiles(tiles)
 
 
@@ -1362,7 +1461,11 @@ class PerceptualDistanceRenderer(DetectionRenderer):
             or "trigger noticeable".
         """
         rel = findings.get("relative_l2_perturbation")
-        if not findings.get("measured", True) or not isinstance(rel, (int, float)) or rel != rel:
+        if (
+            not findings.get("measured", True)
+            or not isinstance(rel, (int, float))
+            or rel != rel
+        ):
             return "not measured", "neutral"
         if susceptible:
             return "trigger hard to notice", "failed"
@@ -1380,12 +1483,14 @@ class PerceptualDistanceRenderer(DetectionRenderer):
         """
         if not findings.get("measured", True):
             return []
-        return [(
-            "Relative L2 perturbation",
-            fmt_number(findings.get("relative_l2_perturbation")),
-            _tone(findings.get("susceptible")),
-            self.glossary["relative_l2_perturbation"],
-        )]
+        return [
+            (
+                "Relative L2 perturbation",
+                fmt_number(findings.get("relative_l2_perturbation")),
+                _tone(findings.get("susceptible")),
+                self.glossary["relative_l2_perturbation"],
+            )
+        ]
 
     def summary_line(self, findings: Dict[str, Any], context: Dict[str, Any]) -> str:
         """Return the relative L2 against its threshold.
@@ -1417,14 +1522,41 @@ class PerceptualDistanceRenderer(DetectionRenderer):
         if not findings.get("measured", True):
             return ""
         g = self.glossary
-        tiles = [("Threshold", fmt_number(findings.get("threshold")), "neutral", g["threshold"])]
+        tiles = [
+            (
+                "Threshold",
+                fmt_number(findings.get("threshold")),
+                "neutral",
+                g["threshold"],
+            )
+        ]
         if findings.get("psnr_db") is not None:
-            tiles.append(("PSNR", f"{fmt_number(findings.get('psnr_db'), 1)} dB", "neutral", g["psnr_db"]))
+            tiles.append(
+                (
+                    "PSNR",
+                    f"{fmt_number(findings.get('psnr_db'), 1)} dB",
+                    "neutral",
+                    g["psnr_db"],
+                )
+            )
         if findings.get("fraction_changed") is not None:
-            tiles.append(("Values changed", fmt_percent(findings.get("fraction_changed"), 1), "neutral",
-                          g["fraction_changed"]))
+            tiles.append(
+                (
+                    "Values changed",
+                    fmt_percent(findings.get("fraction_changed"), 1),
+                    "neutral",
+                    g["fraction_changed"],
+                )
+            )
         if findings.get("n_pairs") is not None:
-            tiles.append(("Sample pairs", fmt_number(findings.get("n_pairs")), "neutral", g["n_pairs"]))
+            tiles.append(
+                (
+                    "Sample pairs",
+                    fmt_number(findings.get("n_pairs")),
+                    "neutral",
+                    g["n_pairs"],
+                )
+            )
         return metric_tiles(tiles)
 
 
@@ -1484,7 +1616,9 @@ class OutputConfidenceShiftRenderer(DetectionRenderer):
         shift = findings.get("confidence_shift", findings.get("stealth_score"))
         if shift is None:
             return []
-        return [("Output confidence shift", fmt_number(shift), "neutral", self.description)]
+        return [
+            ("Output confidence shift", fmt_number(shift), "neutral", self.description)
+        ]
 
     def summary_line(self, findings: Dict[str, Any], context: Dict[str, Any]) -> str:
         """Return the shift.
@@ -1514,12 +1648,28 @@ class OutputConfidenceShiftRenderer(DetectionRenderer):
         if clean is None and poisoned is None:
             return ""
         g = self.glossary
-        return metric_tiles([
-            ("Mean confidence, clean", fmt_number(clean), "neutral", g["mean_confidence_clean"]),
-            ("Mean confidence, triggered", fmt_number(poisoned), "neutral", g["mean_confidence_poisoned"]),
-            ("Sample pairs", fmt_number(findings.get("sample_pairs_evaluated")), "neutral",
-             g["sample_pairs_evaluated"]),
-        ])
+        return metric_tiles(
+            [
+                (
+                    "Mean confidence, clean",
+                    fmt_number(clean),
+                    "neutral",
+                    g["mean_confidence_clean"],
+                ),
+                (
+                    "Mean confidence, triggered",
+                    fmt_number(poisoned),
+                    "neutral",
+                    g["mean_confidence_poisoned"],
+                ),
+                (
+                    "Sample pairs",
+                    fmt_number(findings.get("sample_pairs_evaluated")),
+                    "neutral",
+                    g["sample_pairs_evaluated"],
+                ),
+            ]
+        )
 
     def detail_skip(self, findings: Dict[str, Any]) -> Sequence[str]:
         """Skip the legacy ``stealth_score`` when ``confidence_shift`` duplicates it.
@@ -1582,21 +1732,46 @@ class CleanAccuracyRetentionRenderer(DetectionRenderer):
         Returns:
             HTML fragment, or "" when no retention curve was recorded.
         """
-        curve = [p for p in findings.get("retention_curve") or [] if isinstance(p, dict)]
+        curve = [
+            p for p in findings.get("retention_curve") or [] if isinstance(p, dict)
+        ]
         if not curve:
             return ""
         curve.sort(key=lambda p: p.get("stage_index", 0))
         points = [(str(p.get("stage", "")), p.get("accuracy")) for p in curve]
         g = self.glossary
-        tiles = metric_tiles([
-            ("Initial", fmt_percent(findings.get("initial_accuracy")), "neutral", g["initial_accuracy"]),
-            ("Peak", fmt_percent(findings.get("peak_accuracy")), "neutral", g["peak_accuracy"]),
-            ("Final", fmt_percent(findings.get("final_accuracy")), "neutral", g["final_accuracy"]),
-            ("Forgetting", fmt_percent(findings.get("forgetting")), "neutral", g["forgetting"]),
-        ])
+        tiles = metric_tiles(
+            [
+                (
+                    "Initial",
+                    fmt_percent(findings.get("initial_accuracy")),
+                    "neutral",
+                    g["initial_accuracy"],
+                ),
+                (
+                    "Peak",
+                    fmt_percent(findings.get("peak_accuracy")),
+                    "neutral",
+                    g["peak_accuracy"],
+                ),
+                (
+                    "Final",
+                    fmt_percent(findings.get("final_accuracy")),
+                    "neutral",
+                    g["final_accuracy"],
+                ),
+                (
+                    "Forgetting",
+                    fmt_percent(findings.get("forgetting")),
+                    "neutral",
+                    g["forgetting"],
+                ),
+            ]
+        )
         chart = line_chart_svg(points, y_label="Retention accuracy")
         rows = "".join(
-            f"<tr><td>{esc(stage)}</td><td>{fmt_percent(acc)}</td></tr>" for stage, acc in points
+            f"<tr><td>{esc(stage)}</td><td>{fmt_percent(acc)}</td></tr>"
+            for stage, acc in points
         )
         return f"""
                 {tiles}

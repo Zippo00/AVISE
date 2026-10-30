@@ -167,7 +167,9 @@ def _config_lines(configuration: Dict[str, Any]) -> List[str]:
     if get("trigger_type"):
         params = get("trigger_config") or {}
         detail = ", ".join(f"{humanize(k)} {fmt_number(v)}" for k, v in params.items())
-        lines.append(f"Trigger type: {get('trigger_type')}" + (f" ({detail})" if detail else ""))
+        lines.append(
+            f"Trigger type: {get('trigger_type')}" + (f" ({detail})" if detail else "")
+        )
     if get("poison_rate") is not None:
         lines.append(
             f"Poisoned share: {fmt_percent(get('poison_rate'), 0)} of the training samples that "
@@ -184,7 +186,9 @@ def _config_lines(configuration: Dict[str, Any]) -> List[str]:
     return lines
 
 
-def _sequence_text(case: Optional[Dict[str, Any]], configuration: Dict[str, Any]) -> str:
+def _sequence_text(
+    case: Optional[Dict[str, Any]], configuration: Dict[str, Any]
+) -> str:
     """Render a case's task sequence as an arrow-separated line.
 
     Args:
@@ -222,7 +226,7 @@ def _drifts_after_inject(case: Optional[Dict[str, Any]]) -> Optional[int]:
     stages = [_stage_name(t) for t in tasks]
     if "inject" not in stages:
         return None
-    return sum(1 for s in stages[stages.index("inject") + 1:] if s == "drift")
+    return sum(1 for s in stages[stages.index("inject") + 1 :] if s == "drift")
 
 
 def _case(configuration: Dict[str, Any], set_id: Any) -> Optional[Dict[str, Any]]:
@@ -271,9 +275,15 @@ def _observations(result: Dict[str, Any], configuration: Dict[str, Any]) -> List
     f = _backdoor(result)
     asr, t = f.get("asr_at_injection"), f.get("asr_threshold")
     status = result.get("status")
-    if status == "passed" and isinstance(asr, (int, float)) and isinstance(t, (int, float)):
+    if (
+        status == "passed"
+        and isinstance(asr, (int, float))
+        and isinstance(t, (int, float))
+    ):
         if asr == 0:
-            out.append("The trigger had no measurable effect: the attack success rate was 0%.")
+            out.append(
+                "The trigger had no measurable effect: the attack success rate was 0%."
+            )
         elif asr < t:
             out.append(
                 f"The attack success rate stayed below the threshold ({fmt_percent(asr)} < "
@@ -290,7 +300,9 @@ def _observations(result: Dict[str, Any], configuration: Dict[str, Any]) -> List
             "could keep it longer."
         )
     if status == "failed" and f.get("backdoor_survived_drift") is True:
-        out.append("The backdoor survived every later training task that followed the attack.")
+        out.append(
+            "The backdoor survived every later training task that followed the attack."
+        )
     pd_entry = (result.get("detections") or {}).get("perceptual_distance")
     if pd_entry is not None:
         pd_verdict, pd_findings = split_detection(pd_entry)
@@ -379,11 +391,15 @@ def urgency_sentence(tags: set) -> str:
         One sentence.
     """
     if "failed" in tags:
-        return ("The target was found vulnerable, so these measures should be prioritised, and the "
-                "test should be repeated after they are in place.")
+        return (
+            "The target was found vulnerable, so these measures should be prioritised, and the "
+            "test should be repeated after they are in place."
+        )
     if tags & {"partial", "faded"}:
-        return ("The target passed, so no urgent fix is required, but the measured effect warrants "
-                "monitoring and periodic re-testing.")
+        return (
+            "The target passed, so no urgent fix is required, but the measured effect warrants "
+            "monitoring and periodic re-testing."
+        )
     return "Periodic re-testing is recommended, especially after changes to the training pipeline."
 
 
@@ -426,7 +442,11 @@ class ContinualLearningSummaryProfile(SummaryProfile):
         info = _SET_INFO.get(set_name)
         self._tags = situation_tags(results)
         self._brief = self._situation_brief(results, summary_stats, configuration)
-        lines = ["ABOUT THE TEST", info.description if info else GENERIC_CL_DESCRIPTION, ""]
+        lines = [
+            "ABOUT THE TEST",
+            info.description if info else GENERIC_CL_DESCRIPTION,
+            "",
+        ]
 
         config_lines = _config_lines(configuration)
         if config_lines:
@@ -446,14 +466,20 @@ class ContinualLearningSummaryProfile(SummaryProfile):
             set_id = r.get("set_id", "unknown")
             status = r.get("status", "error")
             case = _case(configuration, set_id)
-            ctx = {"configuration": configuration, "set_id": set_id, "case": case,
-                   "target_label": configuration.get("target_label")}
+            ctx = {
+                "configuration": configuration,
+                "set_id": set_id,
+                "case": case,
+                "target_label": configuration.get("target_label"),
+            }
             lines.append(f"CASE {set_id}: {status.upper()}")
             seq = _sequence_text(case, configuration)
             if seq:
                 lines.append(f"- Task sequence: {seq}")
             if status not in ("passed", "failed"):
-                lines.append(f"- The case could not be completed: {r.get('reason', '')}")
+                lines.append(
+                    f"- The case could not be completed: {r.get('reason', '')}"
+                )
                 lines.append("")
                 continue
 
@@ -468,12 +494,16 @@ class ContinualLearningSummaryProfile(SummaryProfile):
                 if explained:
                     lines.append(f"- Verdict rule: {explained.get('rule', '')}")
                     for i, c in enumerate(explained.get("conditions") or [], 1):
-                        met = {True: "met", False: "not met"}.get(c.get("met"), "not applicable")
+                        met = {True: "met", False: "not met"}.get(
+                            c.get("met"), "not applicable"
+                        )
                         lines.append(
                             f"  Condition {i}: {c.get('condition')} - required {c.get('required')}, "
                             f"measured {c.get('measured')}: {met}"
                         )
-                    lines.append(f"- Verdict explanation: {explained.get('conclusion', '')}")
+                    lines.append(
+                        f"- Verdict explanation: {explained.get('conclusion', '')}"
+                    )
                 else:
                     lines.append(f"- Verdict reason: {r.get('reason', '')}")
             if not basis:
@@ -483,8 +513,14 @@ class ContinualLearningSummaryProfile(SummaryProfile):
             for name, entry, renderer in _ordered_detections(detections):
                 susceptible, findings = split_detection(entry)
                 title = renderer.title or humanize(name)
-                role = "decides the verdict" if name in basis else "supporting, does not affect the verdict"
-                summary = renderer.summary_line(findings, ctx) or _scalar_digest(findings)
+                role = (
+                    "decides the verdict"
+                    if name in basis
+                    else "supporting, does not affect the verdict"
+                )
+                summary = renderer.summary_line(findings, ctx) or _scalar_digest(
+                    findings
+                )
                 outcome, _ = renderer.badge_for(susceptible, findings)
                 lines.append(f"  * {title} ({role}): {summary}. Outcome: {outcome}.")
                 if not renderer.summary_line(findings, ctx) and findings.get("reason"):
@@ -537,7 +573,9 @@ class ContinualLearningSummaryProfile(SummaryProfile):
             entry = (r.get("detections") or {}).get("backdoor_injection_success")
             if entry is not None:
                 outcome, _ = renderer.badge_for(*split_detection(entry))
-                lines.append(f"- Case {r.get('set_id')}: {r['status']}; backdoor result: {outcome}.")
+                lines.append(
+                    f"- Case {r.get('set_id')}: {r['status']}; backdoor result: {outcome}."
+                )
             lines += [f"  {o}" for o in _observations(r, configuration)]
         return "\n".join(lines)
 
@@ -590,9 +628,13 @@ Rules:
         tags = self._tags
         chosen = select_remediations(_SET_INFO.get(set_name), tags)
         brief = self._brief
-        measures = "\n".join(
-            f"{i}. Recommend {o.text}, because {o.because}." for i, o in enumerate(chosen, 1)
-        ) or "1. Recommend periodic re-testing of the system."
+        measures = (
+            "\n".join(
+                f"{i}. Recommend {o.text}, because {o.because}."
+                for i, o in enumerate(chosen, 1)
+            )
+            or "1. Recommend periodic re-testing of the system."
+        )
         return f"""Write the "Recommended Remediations" section of a security report.
 
 SITUATION (already decided from the measurements; do not reinterpret it)
@@ -652,7 +694,9 @@ Rules:
             The fixed text, or None to query the model.
         """
         if not any(r.get("status") in ("passed", "failed") for r in results):
-            return "No remediation can be recommended because no test case was completed."
+            return (
+                "No remediation can be recommended because no test case was completed."
+            )
         if "no_effect" in situation_tags(results):
             return (
                 "No attack effect was measured, so no specific remediation is required. Periodic "

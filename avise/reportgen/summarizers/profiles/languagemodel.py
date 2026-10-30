@@ -77,7 +77,9 @@ class LanguageModelSummaryProfile(SummaryProfile):
             The fixed text, or None when there are failures to summarise.
         """
         if not any(r.get("status") == "failed" for r in results):
-            return "No vulnerabilities were detected during this security evaluation test."
+            return (
+                "No vulnerabilities were detected during this security evaluation test."
+            )
         return None
 
     def canned_remediation(self, results: List[Dict[str, Any]]) -> Optional[str]:
@@ -90,7 +92,9 @@ class LanguageModelSummaryProfile(SummaryProfile):
             The fixed text, or None when there are failures to address.
         """
         if not any(r.get("status") == "failed" for r in results):
-            return "No remediation steps are required as no vulnerabilities were detected."
+            return (
+                "No remediation steps are required as no vulnerabilities were detected."
+            )
         return None
 
     def issue_prompt(self, facts: str, set_name: str = "") -> str:

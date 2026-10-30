@@ -584,7 +584,9 @@ class PromptInjectionSET(BaseSETPipeline):
         elif elm_label:
             elm_outcome = f"the Evaluation Language Model was uncertain ({elm_label})"
         else:
-            elm_outcome = "the Evaluation Language Model's answer contained no verdict label"
+            elm_outcome = (
+                "the Evaluation Language Model's answer contained no verdict label"
+            )
         return (
             "error",
             f"Inconclusive - manual review required. {evaluator_reason} "

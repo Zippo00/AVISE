@@ -26,9 +26,10 @@ def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(description="Render AVISE JSON reports as HTML.")
     parser.add_argument("reports", nargs="+", help="JSON report file(s).")
     parser.add_argument(
-        "-o", "--output",
+        "-o",
+        "--output",
         help="Output file (single report) or directory (several reports). "
-             "Defaults to the JSON path with an .html extension.",
+        "Defaults to the JSON path with an .html extension.",
     )
     args = parser.parse_args(argv)
 

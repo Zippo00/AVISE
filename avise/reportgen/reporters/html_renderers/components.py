@@ -43,7 +43,19 @@ def humanize(key: str) -> str:
         e.g. "Asr at injection". Known acronyms are upper-cased.
     """
     # "set" in AVISE keys always abbreviates Security Evaluation Test.
-    acronyms = {"asr", "l2", "mae", "psnr", "snr", "db", "id", "api", "url", "std", "set"}
+    acronyms = {
+        "asr",
+        "l2",
+        "mae",
+        "psnr",
+        "snr",
+        "db",
+        "id",
+        "api",
+        "url",
+        "std",
+        "set",
+    }
     words = str(key).replace("_", " ").split()
     out = [w.upper() if w.lower() in acronyms else w for w in words]
     if out and out[0] == out[0].lower():
@@ -120,7 +132,9 @@ def value_html(value: Any, tips: Optional[Dict[str, str]] = None) -> str:
         HTML fragment representing the value.
     """
     if isinstance(value, dict):
-        return kv_table(value, tips=tips) if value else '<span class="muted">empty</span>'
+        return (
+            kv_table(value, tips=tips) if value else '<span class="muted">empty</span>'
+        )
     if isinstance(value, (list, tuple)):
         if not value:
             return '<span class="muted">empty</span>'
@@ -151,15 +165,17 @@ def kv_table(
     tips = tips or {}
     labels = labels or {}
     rows = "".join(
-        f'<tr><th>{esc(labels.get(k) or humanize(k))}{tip(tips.get(k))}</th>'
-        f'<td>{value_html(v, tips)}</td></tr>'
+        f"<tr><th>{esc(labels.get(k) or humanize(k))}{tip(tips.get(k))}</th>"
+        f"<td>{value_html(v, tips)}</td></tr>"
         for k, v in data.items()
         if k not in skip
     )
     return f'<table class="kv">{rows}</table>' if rows else ""
 
 
-def records_table(records: Sequence[dict], tips: Optional[Dict[str, str]] = None) -> str:
+def records_table(
+    records: Sequence[dict], tips: Optional[Dict[str, str]] = None
+) -> str:
     """Render a list of dicts as a table with one column per key.
 
     Args:
@@ -177,7 +193,9 @@ def records_table(records: Sequence[dict], tips: Optional[Dict[str, str]] = None
     tips = tips or {}
     head = "".join(f"<th>{esc(humanize(c))}{tip(tips.get(c))}</th>" for c in columns)
     body = "".join(
-        "<tr>" + "".join(f"<td>{value_html(r.get(c), tips)}</td>" for c in columns) + "</tr>"
+        "<tr>"
+        + "".join(f"<td>{value_html(r.get(c), tips)}</td>" for c in columns)
+        + "</tr>"
         for r in records
     )
     return f'<table class="grid"><tr>{head}</tr>{body}</table>'
@@ -276,7 +294,8 @@ def line_chart_svg(
             f'text-anchor="end">{esc(threshold_label)} {fmt_percent(threshold, 0)}</text>'
         )
     path = " ".join(
-        f'{"M" if i == 0 else "L"}{px(i):.1f},{py(v):.1f}' for i, (_, v) in enumerate(plotted)
+        f"{'M' if i == 0 else 'L'}{px(i):.1f},{py(v):.1f}"
+        for i, (_, v) in enumerate(plotted)
     )
     parts.append(f'<path d="{path}" class="series"/>')
     for i, (x, v) in enumerate(plotted):

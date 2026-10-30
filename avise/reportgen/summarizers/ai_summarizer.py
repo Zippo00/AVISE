@@ -82,20 +82,26 @@ class AISummarizer:
         facts = profile.facts(results, summary_stats, configuration, set_name=set_name)
 
         logger.info("Starting to generate AI summary of the evaluation results...")
-        issue_summary = profile.canned_issue(results) or profile.postprocess(self._ask(
-            profile.issue_prompt(facts, set_name=set_name),
-            profile.system_prompt,
-            fallback="Unable to generate summary.",
-        ))
+        issue_summary = profile.canned_issue(results) or profile.postprocess(
+            self._ask(
+                profile.issue_prompt(facts, set_name=set_name),
+                profile.system_prompt,
+                fallback="Unable to generate summary.",
+            )
+        )
         logger.info("Starting to generate recommended remediations...")
-        recommended_remediations = profile.canned_remediation(results) or profile.postprocess(
+        recommended_remediations = profile.canned_remediation(
+            results
+        ) or profile.postprocess(
             self._ask(
                 profile.remediation_prompt(facts, set_name=set_name),
                 profile.system_prompt,
                 fallback="Unable to generate recommendations.",
             )
         )
-        notes = profile.notes(results, summary_stats, subcategory_runs or {}, configuration)
+        notes = profile.notes(
+            results, summary_stats, subcategory_runs or {}, configuration
+        )
 
         return AISummary(
             issue_summary=issue_summary,
