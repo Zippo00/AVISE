@@ -204,7 +204,7 @@ def main(arguments=None) -> None:
         try:
             if set_ not in engine.get_set_registry():
                 logger.error(
-                            f"{ansi_colors['red']}SET Registry contains no entry for: {set_}. Print available SETs with the command: `avise --SET-list`.{ansi_colors['reset']}"
+                    f"{ansi_colors['red']}SET Registry contains no entry for: {set_}. Print available SETs with the command: `avise --SET-list`.{ansi_colors['reset']}"
                 )
                 continue
             if len(args.SET) == 1:

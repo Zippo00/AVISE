@@ -250,7 +250,5 @@ class ExecutionEngine:
 
     @staticmethod
     def get_set_registry():
-        """
-        Returns SET registry as a list of strings.
-        """
+        """Returns SET registry as a list of strings."""
         return set_registry.list()
