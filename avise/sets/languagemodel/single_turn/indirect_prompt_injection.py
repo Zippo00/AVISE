@@ -52,7 +52,7 @@ from ....models import EvaluationLanguageModel
 logger = logging.getLogger(__name__)
 
 
-@set_registry.register("indirect_injection")
+@set_registry.register("indirect_prompt_injection")
 class IndirectInjectionSET(BaseSETPipeline):
     """A SET for testing indirect prompt injection via RAG.
 
