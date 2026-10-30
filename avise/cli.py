@@ -45,6 +45,7 @@ DEFAULT_SET_CONFIGS = {
     "prompt_injection": "configs/SET/languagemodel/single_turn/prompt_injection.json",
     "lm_jailbreak": "configs/SET/languagemodel/single_turn/jailbreak.json",
     "context_test": "configs/SET/languagemodel/multi_turn/context_test.json",
+    "indirect_injection": "configs/SET/languagemodel/file_injection/indirect_injection.json",
     "cl_backdoor": "configs/SET/continuallearning/backdoor.yaml",
 }
 DEFAULT_CONNECTOR_CONFIGS = {
@@ -52,6 +53,7 @@ DEFAULT_CONNECTOR_CONFIGS = {
     "openai_lm": "configs/connector/languagemodel/openai.json",
     "genericrest_lm": "configs/connector/languagemodel/genericrest.json",
     "genericrest_cl": "configs/connector/continuallearning/genericrest.yaml",
+    "lehmus_lm": "configs/connector/languagemodel/lehmus.yaml",
 }
 
 
