@@ -54,7 +54,9 @@ def detect_terminal_style(stream: Optional[TextIO] = None) -> TerminalStyle:
     except (AttributeError, ValueError):
         is_tty = False
     try:
-        "".join(UNICODE_GLYPHS.values()).encode(getattr(stream, "encoding", None) or "ascii")
+        "".join(UNICODE_GLYPHS.values()).encode(
+            getattr(stream, "encoding", None) or "ascii"
+        )
         unicode = True
     except (UnicodeEncodeError, LookupError):
         unicode = False
@@ -188,14 +190,20 @@ def render_registry_tree(
         return [first] + [indent + line for line in wrapped[1:]]
 
     layouts = {
-        row[2]: description_lines(row[2], row[1], row[4]) for row in rows if row[0] == "item"
+        row[2]: description_lines(row[2], row[1], row[4])
+        for row in rows
+        if row[0] == "item"
     }
     spaced = any(len(layout) > 1 for layout in layouts.values())
 
     lines = []
     previous_kind = None
     for kind, prefix, text, count, continuation in rows:
-        counter = _paint(f" ({count})", ansi_colors["dim"], style) if count is not None else ""
+        counter = (
+            _paint(f" ({count})", ansi_colors["dim"], style)
+            if count is not None
+            else ""
+        )
         tree = _paint(prefix, ansi_colors["dim"], style)
         if spaced and previous_kind == "item" and kind in ("item", "group"):
             # Separate multi-line entries with the tree's vertical line
@@ -230,7 +238,9 @@ def _items_only(group: "RegistryGroup") -> "RegistryGroup":
     Returns:
         A group of the same type holding only ``group.items``.
     """
-    return type(group)(key=group.key, display_name=group.display_name, items=list(group.items))
+    return type(group)(
+        key=group.key, display_name=group.display_name, items=list(group.items)
+    )
 
 
 def list_categories(root: "RegistryGroup") -> List[str]:
@@ -244,6 +254,8 @@ def list_categories(root: "RegistryGroup") -> List[str]:
         name is omitted when it equals the key.
     """
     return [
-        group.key if group.key == group.display_name else f"{group.key} ({group.display_name})"
+        group.key
+        if group.key == group.display_name
+        else f"{group.key} ({group.display_name})"
         for group in root.iter_groups()
     ]
