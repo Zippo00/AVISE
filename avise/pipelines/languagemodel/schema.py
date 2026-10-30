@@ -68,6 +68,13 @@ class OutputData:
         }
 
 
+# Human-readable names for EvaluationResult.verdict_source values, used by reporters.
+VERDICT_SOURCE_LABELS = {
+    "evaluators": "Evaluators (pattern detection)",
+    "elm": "Evaluation Language Model",
+}
+
+
 @dataclass
 class EvaluationResult:
     """Evaluation result of a single test case.
@@ -87,6 +94,9 @@ class EvaluationResult:
     elm_evaluation: Optional[str] = (
         None  # ELM evaluation result (if evaluation model was used)
     )
+    verdict_source: Optional[str] = (
+        None  # What decided the status: "evaluators", "elm", or None if unresolved
+    )
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for serialization."""
@@ -101,6 +111,8 @@ class EvaluationResult:
         }
         if self.elm_evaluation:
             result["elm_evaluation"] = self.elm_evaluation
+        if self.verdict_source:
+            result["verdict_source"] = self.verdict_source
         return result
 
 
