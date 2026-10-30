@@ -30,31 +30,31 @@ target_model:
 # of editing the fields above, then run a SET against a model alias.
 #
 #   export lehmus_APIKEY="cm_api_<YOUR_API_KEY>"
-#   # only needed for the indirect-injection (RAG) SET:
+#   # only needed for the indirect-prompt-injection (RAG) SET:
 #   export lehmus_RAG_URL="https://api.lehmus-ai.oulu.fi/v1/api/<rag-hash>"
 #   export lehmus_RAG_READ_APIKEY="cm_api_<YOUR_READ_KEY>"
 #   export lehmus_RAG_WRITE_APIKEY="cm_api_<YOUR_WRITE_KEY>"
 #
-#   # direct injection (plain chat):
-#   python3 -m avise --SET prompt_injection -c lehmus_lm \
+#   # direct prompt injection (plain chat):
+#   python3 -m avise --SET direct_prompt_injection -c lehmus_lm \
 #     --target "<model-alias>" --elm False --ai-summary False -f html
 #
-#   # indirect injection (RAG document poisoning):
-#   python3 -m avise --SET indirect_injection -c lehmus_lm \
+#   # indirect prompt injection (RAG document poisoning):
+#   python3 -m avise --SET indirect_prompt_injection -c lehmus_lm \
 #     --target "<model-alias>" --elm False --ai-summary False -f html
 #
 # The runs above use --elm False (fast; heuristic signal + evaluators only).
 # To let an Evaluation Language Model be the authoritative judge instead, pass
 # --elm True (the SET config must also provide evaluation_system_prompt, as
-# indirect_injection.json does). The ELM downloads on first use,
+# indirect_prompt_injection.json does). The ELM downloads on first use,
 # so the first run with the ELM enabled is slower:
 #
-#   # direct injection, ELM as judge:
-#   python3 -m avise --SET prompt_injection -c lehmus_lm \
+#   # direct prompt injection, ELM as judge:
+#   python3 -m avise --SET direct_prompt_injection -c lehmus_lm \
 #     --target "<model-alias>" --elm True --ai-summary True -f html
 #
 #   # indirect injection, ELM as judge:
-#   python3 -m avise --SET indirect_injection -c lehmus_lm \
+#   python3 -m avise --SET indirect_prompt_injection -c lehmus_lm \
 #     --target "<model-alias>" --elm True --ai-summary True -f html
 #
 # --target sets the Lehmus model alias (overrides `name` / lehmus_MODEL).

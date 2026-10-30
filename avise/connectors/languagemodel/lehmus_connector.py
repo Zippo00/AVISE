@@ -23,10 +23,10 @@ vector and the report can attribute which one fired:
                                     ConfidentialMind).
 
 Plain-text transport remains via generate() — the AVISE pipeline hook — for
-direct injection (single- and multi-turn).
+direct prompt injection (single- and multi-turn).
 
 Implements BaseLMConnector (connectors/languagemodel/base.py) and registers as
-"lehmus-lm". Configured the AVISE way via a `target_model` / `eval_model`
+"lehmus-lm". Configured via a `target_model` / `eval_model`
 sub-dict; see configs/connector/languagemodel/lehmus.yaml for the fields,
 defaults and per-service env fallbacks (<connector_id>_URL / _APIKEY / _MODEL,
 and the _RAG_* keys).
@@ -723,7 +723,7 @@ class LehmusLMConnector(BaseLMConnector):
 
     # -- channel 1: RAG vector store (persistent) ---------------------------
     def _via_rag(self, path, trigger_prompt, system, **kw) -> InjectionResult:
-        """Indirect injection via the ConfidentialMind RAG service.
+        """Indirect prompt injection via the ConfidentialMind RAG service.
 
         Two-service flow (RAG retrieves, the chat gateway generates):
           1. ingest the poisoned file into the RAG store (write key),
