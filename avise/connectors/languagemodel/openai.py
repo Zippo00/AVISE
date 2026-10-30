@@ -6,8 +6,6 @@ Supports GPT-4, GPT-3.5-turbo, and other OpenAI chat completion models.
 import logging
 from typing import List
 
-from openai import OpenAI
-
 from .base import BaseLMConnector, Message
 from ...registry import connector_registry
 from ...utils import ansi_colors
@@ -132,6 +130,9 @@ class OpenAILMConnector(BaseLMConnector):
                 self.max_tokens = config["target_model"]["max_tokens"]
             else:
                 self.max_tokens = 512
+
+        # Imported here so that importing AVISE does not load the OpenAI SDK
+        from openai import OpenAI
 
         # Initialize OpenAI client
         try:

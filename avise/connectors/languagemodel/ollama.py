@@ -3,8 +3,6 @@
 import logging
 from typing import List
 
-import ollama
-
 from .base import BaseLMConnector, Message
 from ...registry import connector_registry
 from ...utils import ansi_colors
@@ -32,6 +30,9 @@ class OllamaLMConnector(BaseLMConnector):
             config: Dictionary containing data from Connector configuration JSON.
             evaluation: Boolean flag indicating whether initializing a connector for the target model or the evaluation model
         """
+        # Imported here so that importing AVISE does not load the Ollama SDK
+        import ollama
+
         self.api_key = None
         if evaluation:
             self.model = config["eval_model"]["name"]

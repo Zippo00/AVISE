@@ -6,11 +6,6 @@ import os
 import sys
 from importlib.resources import files
 
-import torch
-from transformers import Mistral3ForConditionalGeneration, MistralCommonBackend
-from huggingface_hub import snapshot_download
-from mistral_common.exceptions import MistralCommonException
-
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -34,6 +29,12 @@ class EvaluationLanguageModel:
         system_prompt: str = None,
         use_device: str = "auto",
     ):
+        # Heavy ML libraries are imported here, not at module level, so that
+        # importing AVISE (e.g. for `avise --SET-list`) stays fast.
+        import torch
+        from transformers import Mistral3ForConditionalGeneration, MistralCommonBackend
+        from mistral_common.exceptions import MistralCommonException
+
         logger.info("Loading Evaluation Language Model...")
         torch.cuda.empty_cache()
         self.model = None
@@ -195,6 +196,8 @@ class EvaluationLanguageModel:
     def del_model(self):
         """Delete the model from GPU memory."""
         if self.model:
+            import torch
+
             self.model.cpu()
             del self.model
             del self.tokenizer
@@ -213,6 +216,8 @@ class EvaluationLanguageModel:
             model_path (str): Path where to save the model.
             model_name (str): Name of the Hugging Face model.
         """
+        from huggingface_hub import snapshot_download
+
         model_path = Path(files("avise").joinpath(model_path))
         # Check if path exists
         if not os.path.exists(model_path):

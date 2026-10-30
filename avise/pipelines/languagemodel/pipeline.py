@@ -11,12 +11,12 @@ from enum import Enum
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 from math import sqrt
+from statistics import NormalDist
 
 from .schema import LanguageModelSETCase, OutputData, EvaluationResult, ReportData
 from ...connectors.languagemodel.base import BaseLMConnector
 from ...models import EvaluationLanguageModel
 
-from scipy.special import erfinv
 
 logger = logging.getLogger(__name__)
 
@@ -339,7 +339,11 @@ class BaseSETPipeline(ABC):
         p = passed / n
 
         # Z-score for confidence level (1.96 for 95% CI)
-        z = 1.96 if confidence_level == 0.95 else sqrt(2) * erfinv(confidence_level)
+        z = (
+            1.96
+            if confidence_level == 0.95
+            else NormalDist().inv_cdf((1 + confidence_level) / 2)
+        )
 
         # Wilson score interval
         denominator = 1 + (z**2 / n)
