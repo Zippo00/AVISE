@@ -89,7 +89,7 @@ class IndirectInjectionSET(BaseSETPipeline):
               as an equivalent for the conventional short form.
             - channel : which FileIntake channel to use (default from config)
             - cleanup : whether to delete the ingested doc afterwards # TODO: In the current default config, this setting is set once for the SET, not per case - update docstring or config.
-            - system / model_alias : optional per-case overrides
+            - system / model_alias : optional per-case overrides # TODO: Add key-value pair with null value to default config as an example
 
         Args:
             set_config_path: Path to the SET configuration file.
@@ -136,7 +136,7 @@ class IndirectInjectionSET(BaseSETPipeline):
         for i, s in enumerate(sets):
             if not isinstance(s, dict):
                 raise ValueError(
-                    "indirect_injection cases must be objects with a payload_file."
+                    "indirect_prompt_injection cases must be objects with a payload_file."
                 )
             if "payload_file" not in s:
                 raise ValueError(
